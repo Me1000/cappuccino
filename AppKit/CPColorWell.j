@@ -44,6 +44,8 @@ var _CPColorWellDidBecomeExclusiveNotification = @"_CPColorWellDidBecomeExclusiv
     
     CPColor _color;
     CPView  _wellView;
+    CPColor _highlightedBezelColor;
+    CPColor _bezelColor;
 }
 
 - (id)initWithFrame:(CGRect)aFrame
@@ -101,6 +103,27 @@ var _CPColorWellDidBecomeExclusiveNotification = @"_CPColorWellDidBecomeExclusiv
     _bordered = bordered;
     
     [self drawWellInside:CGRectInset([self bounds], 3.0, 3.0)];
+}
+
+- (void)setHighlightedBezelColor:(CPColor)aColor
+{
+    _highlightedBezelColor = aColor;
+}
+
+- (CPColor)highlightedBezelColor
+{
+    return _highlightedBezelColor;
+}
+
+- (void)setBezelColor:(CPColor)aColor
+{
+    _bezelColor = aColor;
+    [self drawBezelWithHighlight:NO];
+}
+
+- (CPColor)bezelColor
+{
+    return _bezelColor;
 }
 
 // Managing Color From Color Wells
@@ -190,6 +213,10 @@ var _CPColorWellDidBecomeExclusiveNotification = @"_CPColorWellDidBecomeExclusiv
 
 - (void)drawBezelWithHighlight:(BOOL)shouldHighlight
 {
+    if(shouldHighlight)
+        [self setBackgroundColor:_highlightedBezelColor];
+    else
+        [self setBackgroundColor:_bezelColor];
 }
 
 /*!

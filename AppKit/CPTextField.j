@@ -80,6 +80,7 @@ CPTextFieldRoundedBezel         = 1;
 var CPTextFieldDOMInputElement = nil,
     CPTextFieldDOMPasswordInputElement = nil,
     CPTextFieldDOMStandardInputElement = nil,
+    CPTextFieldDOMMultilineInputElement = nil,
     CPTextFieldInputOwner = nil,
     CPTextFieldTextDidChangeValue = nil,
     CPTextFieldInputResigning = NO,
@@ -109,8 +110,10 @@ var CPSecureTextFieldCharacter = "\u2022";
 
 @end
 
+
 CPTextFieldStateRounded     = CPThemeState("rounded");
 CPTextFieldStatePlaceholder = CPThemeState("placeholder");
+CPThemeStateEditable		= CPThemeState("editable");
 
 /*!
     @ingroup appkit
@@ -136,6 +139,7 @@ CPTextFieldStatePlaceholder = CPThemeState("placeholder");
     CPTextFieldBezelStyle   _bezelStyle;
     BOOL                    _isBordered;
     CPControlSize           _controlSize;
+   	BOOL					_wraps; // if true we use a textarea 
 }
 
 + (CPTextField)textFieldWithStringValue:(CPString)aStringValue placeholder:(CPString)aPlaceholder width:(float)aWidth
@@ -203,8 +207,8 @@ CPTextFieldStatePlaceholder = CPThemeState("placeholder");
 
 + (id)themeAttributes
 {
-    return [CPDictionary dictionaryWithObjects:[_CGInsetMakeZero(), _CGInsetMake(2.0, 2.0, 2.0, 2.0), nil]
-                                       forKeys:[@"bezel-inset", @"content-inset", @"bezel-color"]];
+    return [CPDictionary dictionaryWithObjects:[_CGInsetMakeZero(), _CGInsetMake(2.0, 2.0, 2.0, 2.0), nil, nil, _CGInsetMakeZero()]
+                                       forKeys:[@"bezel-inset", @"content-inset", @"bezel-color", @"focus-ring-color", @"focus-inset"]];
 }
 
 /* @ignore */
@@ -357,6 +361,42 @@ CPTextFieldStatePlaceholder = CPThemeState("placeholder");
         
         CPTextFieldDOMInputElement = CPTextFieldDOMPasswordInputElement;
     }
+    else if ([self wraps])
+    { 
+    	//alert("wraps");
+       	if (!CPTextFieldDOMMultilineInputElement)
+        {
+      		//console.log("here");
+        	CPTextFieldDOMMultilineInputElement = document.createElement("textarea");
+        	CPTextFieldDOMMultilineInputElement.style.resize = "none";
+        	CPTextFieldDOMMultilineInputElement.style.overflow = "hidden";
+            CPTextFieldDOMMultilineInputElement.style.position = "absolute";
+            CPTextFieldDOMMultilineInputElement.style.border = "0px";
+            CPTextFieldDOMMultilineInputElement.style.padding = "0px";
+            CPTextFieldDOMMultilineInputElement.style.margin = "0px";
+            CPTextFieldDOMMultilineInputElement.style.whiteSpace = "pre";
+            CPTextFieldDOMMultilineInputElement.style.background = "transparent";
+            CPTextFieldDOMMultilineInputElement.style.outline = "none";
+			
+			if (document.attachEvent)
+       		{
+       	    	CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
+         		CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
+            	CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
+       		}
+        	else
+        	{
+            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
+            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
+            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
+        	}
+			
+            CPTextFieldDOMMultilineInputElement.onblur = CPTextFieldBlurFunction;
+        }
+        
+        CPTextFieldDOMInputElement = CPTextFieldDOMMultilineInputElement;
+       		
+    }
     else
     {
         CPTextFieldDOMInputElement = CPTextFieldDOMStandardInputElement;
@@ -391,7 +431,13 @@ CPTextFieldStatePlaceholder = CPThemeState("placeholder");
 - (void)setEditable:(BOOL)shouldBeEditable
 {
     _isEditable = shouldBeEditable;
+    
+    if (shouldBeEditable)
+        [self setThemeState:CPThemeStateEditable];
+    else
+        [self unsetThemeState:CPThemeStateEditable];
 }
+
 
 /*!
     Returns \c YES if the textfield is currently editable by the user.
@@ -871,10 +917,28 @@ CPTextFieldStatePlaceholder = CPThemeState("placeholder");
     return bounds;
 }
 
+- (CGRect)focusRingRectForBounds:(CFRect)bounds
+{
+    var focusRingInset = [self currentValueForThemeAttribute:@"focus-inset"];
+
+    if (_CGInsetIsEmpty(focusRingInset))
+        return bounds;
+    
+    bounds.origin.x += focusRingInset.left;
+    bounds.origin.y += focusRingInset.top;
+    bounds.size.width -= focusRingInset.left + focusRingInset.right;
+    bounds.size.height -= focusRingInset.top + focusRingInset.bottom;
+    
+    return bounds;
+}
+
 - (CGRect)rectForEphemeralSubviewNamed:(CPString)aName
 {
     if (aName === "bezel-view")
         return [self bezelRectForBounds:[self bounds]];
+  	
+  	else if (aName === "focus-ring-view")
+        return [self focusRingRectForBounds:[self bounds]];
     
     else if (aName === "content-view")
         return [self contentRectForBounds:[self bounds]];
@@ -885,6 +949,14 @@ CPTextFieldStatePlaceholder = CPThemeState("placeholder");
 - (CPView)createEphemeralSubviewNamed:(CPString)aName
 {
     if (aName === "bezel-view")
+    {
+        var view = [[CPView alloc] initWithFrame:_CGRectMakeZero()];
+
+        [view setHitTests:NO];
+        
+        return view;
+    }
+    else if (aName === "focus-ring-view")
     {
         var view = [[CPView alloc] initWithFrame:_CGRectMakeZero()];
 
@@ -905,12 +977,21 @@ CPTextFieldStatePlaceholder = CPThemeState("placeholder");
 
 - (void)layoutSubviews
 {
+	var focusRingView = [self layoutEphemeralSubviewNamed:@"focus-ring-view"
+                                           positioned:CPWindowBelow
+                      relativeToEphemeralSubviewNamed:@"content-view"];
+   	if (focusRingView)
+        [focusRingView setBackgroundColor:[self currentValueForThemeAttribute:@"focus-ring-color"]];
+
     var bezelView = [self layoutEphemeralSubviewNamed:@"bezel-view"
                                            positioned:CPWindowBelow
                       relativeToEphemeralSubviewNamed:@"content-view"];
       
     if (bezelView)
         [bezelView setBackgroundColor:[self currentValueForThemeAttribute:@"bezel-color"]];
+        
+    
+	
     
     var contentView = [self layoutEphemeralSubviewNamed:@"content-view"
                                              positioned:CPWindowAbove
@@ -942,6 +1023,16 @@ CPTextFieldStatePlaceholder = CPThemeState("placeholder");
         [contentView setTextShadowColor:[self currentValueForThemeAttribute:@"text-shadow-color"]];
         [contentView setTextShadowOffset:[self currentValueForThemeAttribute:@"text-shadow-offset"]];
     }
+}
+
+- (void)setWraps:(BOOL)aFlag
+{
+	_wraps = aFlag;
+}
+
+- (BOOL)wraps
+{
+	return _wraps;
 }
 
 @end
