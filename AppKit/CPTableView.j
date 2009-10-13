@@ -1713,6 +1713,8 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     [self selectRowIndexes:newSelection byExtendingSelection:NO];
 
     [self _noteSelectionIsChanging];
+    
+    [[self window] makeFirstResponder:self];
 }
 
 - (void)_noteSelectionIsChanging
