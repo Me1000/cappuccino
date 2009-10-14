@@ -1733,6 +1733,78 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
                     userInfo:nil];
 }
 
+- (BOOL)becomeFirstResponder
+{
+    return YES;
+}
+
+- (BOOL)acceptsFirstResponder
+{
+    return YES;
+}
+
+- (void)keyDown:(CPEvent)anEvent {
+    [self interpretKeyEvents:anEvent];
+}
+
+- (void)interpretKeyEvents:(id)anEvent
+{
+	var key = [anEvent keyCode];
+	
+	if(key == CPDeleteKeyCode)
+	{
+	   var obj = [self delegate];
+	   if([_delegate respondsToSelector: @selector(tableViewDeleteKeyPressed:)])
+            [_delegate tableViewDeleteKeyPressed:self];
+	}
+	
+	if(key == CPUpArrowKeyCode)
+	{
+	   if([[self selectedRowIndexes] count] > 0)
+	   {
+	      var extend = NO;
+	      if(([anEvent modifierFlags] & CPShiftKeyMask) && _allowsMultipleSelection)
+            extend = YES;
+	       
+	       var i = [[self selectedRowIndexes] firstIndex];
+	       if(i>0)
+	           i--;
+           [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
+	   }
+	   else
+	   {
+	       if([self numberOfRows] > 0)
+	          [self selectRowIndexes:[CPIndexSet indexSetWithIndex:[self numberOfRows] - 1] byExtendingSelection:NO];
+	   }
+	   
+	   [self _noteSelectionIsChanging];
+	}
+	
+	if(key == CPDownArrowKeyCode)
+	{
+	   if([[self selectedRowIndexes] count] > 0)
+	   {
+	      var extend = NO;
+	      
+	      if(([anEvent modifierFlags] & CPShiftKeyMask) && _allowsMultipleSelection)
+            extend = YES;
+	       
+	       var i = [[self selectedRowIndexes] lastIndex];
+	       if(i<[self numberOfRows] - 1)
+	           i++;
+           [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
+	   }
+	   else
+	   {
+	       if([self numberOfRows] > 0)
+	           [self selectRowIndexes:[CPIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+	           
+	   }
+
+     [self _noteSelectionIsChanging];
+	}
+}
+
 @end
 
 var CPTableViewDataSourceKey        = @"CPTableViewDataSourceKey",
