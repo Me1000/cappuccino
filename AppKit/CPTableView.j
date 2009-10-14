@@ -1624,6 +1624,8 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     _previouslySelectedRowIndexes = nil;
 
     [self _updateSelectionWithMouseAtRow:row];
+    
+    [[self window] makeFirstResponder:self];
 
     return YES;
 }
@@ -1714,7 +1716,6 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 
     [self _noteSelectionIsChanging];
     
-    [[self window] makeFirstResponder:self];
 }
 
 - (void)_noteSelectionIsChanging
