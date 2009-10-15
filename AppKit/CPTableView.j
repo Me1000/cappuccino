@@ -962,6 +962,33 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     * - scrollRowToVisible:
     * - scrollColumnToVisible:
 */
+
+- (void)scrollRowToVisible:(int)rowIndex
+{   
+    var scrollView = [[self superview] superview];
+
+    if ([scrollView isKindOfClass:[CPScrollView class]] && [scrollView documentView] === self)
+    {
+        var rect = CGRectMake([scrollView._contentView bounds].origin.x, rowIndex*[self rowHeight], 1, [self rowHeight]);
+        [[[scrollView contentView] documentView] scrollRectToVisible: rect];
+    }
+}
+
+- (void)scrollColumnToVisible:(int)columnIndex
+{
+    var rect = [self rectOfColumn:columnIndex];
+    
+    var scrollView = [[self superview] superview];
+
+    if ([scrollView isKindOfClass:[CPScrollView class]] && [scrollView documentView] === self)
+    {
+        var rect = CGRectMake(rect.origin.x, [scrollView._contentView bounds].origin.y, rect.size.width, 1);
+        [[[scrollView contentView] documentView] scrollRectToVisible: rect];
+        
+        /*FIX ME: tableview header isn't rendered until you click the horizontal scroller (or scroll)*/
+    }
+}
+
 //Persistence
 /*
     * - autosaveName
@@ -1500,16 +1527,23 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 
 - (void)highlightSelectionInClipRect:(CGRect)aRect
 {
-    // FIXME: This color thingy is terrible probably.
-    if ([self selectionHighlightStyle] === CPTableViewSelectionHighlightStyleSourceList)
-        [[CPColor selectionColorSourceView] setFill];
-	else
-	   [[CPColor selectionColor] setFill];
 
     var context = [[CPGraphicsContext currentContext] graphicsPort],
         indexes = [],
         rectSelector = @selector(rectOfRow:);
 
+    
+    // FIXME: This color thingy is terrible probably.
+    
+    //if ([self selectionHighlightStyle] === CPTableViewSelectionHighlightStyleSourceList)    
+        //drawImagePatterHack(context, _CGRectMake(0.0, ([[self selectedRowIndexes] firstIndex] * (_rowHeight + _intercellSpacing.height)), _CGRectGetWidth([self bounds]), _rowHeight), "Frameworks/AppKit/Resources/Aristo.blend/Resources/tableviewselection.png")
+        
+    if ([self selectionHighlightStyle] === CPTableViewSelectionHighlightStyleSourceList)
+        [[CPColor selectionColorSourceView] setFill];
+	else
+	   [[CPColor selectionColor] setFill];
+
+    
     if ([_selectedRowIndexes count] >= 1)
     {
         var exposedRows = [CPIndexSet indexSetWithIndexesInRange:[self rowsInRect:aRect]],
@@ -1764,21 +1798,42 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 	   if([[self selectedRowIndexes] count] > 0)
 	   {
 	      var extend = NO;
+	      
 	      if(([anEvent modifierFlags] & CPShiftKeyMask) && _allowsMultipleSelection)
             extend = YES;
 	       
 	       var i = [[self selectedRowIndexes] firstIndex];
-	       if(i>0)
-	           i--;
-           [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
-	   }
-	   else
-	   {
-	       if([self numberOfRows] > 0)
-	          [self selectRowIndexes:[CPIndexSet indexSetWithIndex:[self numberOfRows] - 1] byExtendingSelection:NO];
-	   }
-	   
-	   [self _noteSelectionIsChanging];
+	       if(i > 0)
+	           i--; //set index to the prev row before the first row selected
+	 }
+     else
+	 {
+	   var extend = NO;
+	   //no rows are currently selected
+	     if([self numberOfRows] > 0)
+	         var i = [self numberOfRows] - 1; //select the first row      
+	  }
+	 
+	 
+	  if(_implementedDelegateMethods & CPTableViewDelegate_tableView_shouldSelectRow_)
+      {
+        
+           while((![_delegate tableView:self shouldSelectRow:i]) && i > 0)
+           {   
+               //check to see if the row can be selected if it can't be then see if the prev row can be selected
+               i--;
+           }
+           
+           //if the index still can be selected after the loop then just return
+            if(![_delegate tableView:self shouldSelectRow:i])
+                return;
+      }
+	 
+      [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
+        
+     if(i)
+         [self scrollRowToVisible:i];
+     [self _noteSelectionIsChanging];
 	}
 	
 	if(key == CPDownArrowKeyCode)
@@ -1792,16 +1847,35 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 	       
 	       var i = [[self selectedRowIndexes] lastIndex];
 	       if(i<[self numberOfRows] - 1)
-	           i++;
-           [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
-	   }
-	   else
-	   {
-	       if([self numberOfRows] > 0)
-	           [self selectRowIndexes:[CPIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
-	           
-	   }
-
+	           i++; //set index to the next row after the last row selected
+	 }
+     else
+	 {
+	   var extend = NO;
+	   //no rows are currently selected
+	     if([self numberOfRows] > 0)
+	         var i = 0; //select the first row      
+	 }
+	 
+	 
+	  if(_implementedDelegateMethods & CPTableViewDelegate_tableView_shouldSelectRow_)
+      {
+        
+           while((![_delegate tableView:self shouldSelectRow:i]) && i<[self numberOfRows])
+           {   
+               //check to see if the row can be selected if it can't be then see if the next row can be selected
+               i++;
+           }
+           
+           //if the index still can be selected after the loop then just return
+            if(![_delegate tableView:self shouldSelectRow:i])
+                return;
+      }
+	 
+      [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
+        
+     if(i)
+         [self scrollRowToVisible:i];
      [self _noteSelectionIsChanging];
 	}
 }
@@ -1909,7 +1983,7 @@ var CPTableViewDataSourceKey        = @"CPTableViewDataSourceKey",
 
 + (CPColor)selectionColorSourceView
 {
-	return [CPColor colorWithPatternImage:[[CPImage alloc] initByReferencingFile:@"Resources/tableviewselection.png" size:CGSizeMake(6,22)]];
+	return [CPColor colorWithPatternImage:[[CPImage alloc] initByReferencingFile:@"AppKit/Themes/Aristo/Resources/tableviewselection.png" size:CGSizeMake(6,22)]];
 }
 
 
