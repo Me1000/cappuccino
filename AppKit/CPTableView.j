@@ -1175,7 +1175,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         objectValue = [_dataSource tableView:self objectValueForTableColumn:aTableColumn row:aRowIndex];
         tableColumnObjectValues[aRowIndex] = objectValue;
     }
-
+    
     return objectValue;
 }
 
@@ -1533,11 +1533,8 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         rectSelector = @selector(rectOfRow:);
 
     
-    // FIXME: This color thingy is terrible probably.
-    
-    //if ([self selectionHighlightStyle] === CPTableViewSelectionHighlightStyleSourceList)    
-        //drawImagePatterHack(context, _CGRectMake(0.0, ([[self selectedRowIndexes] firstIndex] * (_rowHeight + _intercellSpacing.height)), _CGRectGetWidth([self bounds]), _rowHeight), "Frameworks/AppKit/Resources/Aristo.blend/Resources/tableviewselection.png")
-        
+    // FIXME: This color thingy is terrible probably. 
+    //(Needs gradient implementation in core graphics)     
     if ([self selectionHighlightStyle] === CPTableViewSelectionHighlightStyleSourceList)
         [[CPColor selectionColorSourceView] setFill];
 	else
@@ -1666,7 +1663,9 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 
 - (BOOL)continueTracking:(CGPoint)lastPoint at:(CGPoint)aPoint
 {
-    [self _updateSelectionWithMouseAtRow:[self rowAtPoint:aPoint]];
+    var row = [self rowAtPoint:aPoint];
+    [self _updateSelectionWithMouseAtRow:row];
+    [self scrollRowToVisible:row];
 
     return YES;
 }
