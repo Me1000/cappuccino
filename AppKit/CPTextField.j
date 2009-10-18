@@ -328,7 +328,7 @@ CPThemeStateEditable		= CPThemeState("editable");
         CPTextFieldDOMStandardInputElement = CPTextFieldDOMInputElement;
     }
     
-    if (CPFeatureIsCompatible(CPInputTypeCanBeChangedFeature))
+    /*if (CPFeatureIsCompatible(CPInputTypeCanBeChangedFeature))
     {
         if ([self isSecure])
             CPTextFieldDOMInputElement.type = "password";
@@ -336,7 +336,7 @@ CPThemeStateEditable		= CPThemeState("editable");
             CPTextFieldDOMInputElement.type = "text";
 
         return CPTextFieldDOMInputElement;
-    }
+    }*/
 
     if ([self isSecure])
     {
@@ -352,9 +352,20 @@ CPThemeStateEditable		= CPThemeState("editable");
             CPTextFieldDOMPasswordInputElement.style.outline = "none";
             CPTextFieldDOMPasswordInputElement.type = "password";
 
-            CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
-            CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
-            CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
+           
+            
+            if (document.attachEvent)
+            {
+                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
+                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
+                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
+            }
+            else
+            {
+                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
+                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
+                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
+            }
 
             CPTextFieldDOMPasswordInputElement.onblur = CPTextFieldBlurFunction;
         }
