@@ -1834,9 +1834,11 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 	 
       [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
         
-     if(i)
+      if(i)
+      {
          [self scrollRowToVisible:i];
          [self _noteSelectionDidChange];
+      }
 	}
 	
 	if(key == CPDownArrowKeyCode)
@@ -1877,9 +1879,11 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 	 
       [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
         
-     if(i)
+      if(i)
+      {
          [self scrollRowToVisible:i];
-     [self _noteSelectionDidChange];
+         [self _noteSelectionDidChange];
+       }
 	}
 }
 
