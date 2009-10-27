@@ -566,6 +566,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         _selectedColumnIndexes = [columns copy];
 
     [self setNeedsLayout];
+    [self _noteSelectionDidChange];
 }
 
 - (void)selectRowIndexes:(CPIndexSet)rows byExtendingSelection:(BOOL)shouldExtendSelection
@@ -579,6 +580,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         _selectedRowIndexes = [rows copy];
 
     [self setNeedsLayout];
+    [self _noteSelectionDidChange];
 }
 
 - (CPIndexSet)selectedColumnIndexes
@@ -594,11 +596,13 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 - (void)deselectColumn:(CPInteger)aColumn
 {
     [_selectedColumnIndexes removeIndex:aColumn];
+    [self _noteSelectionDidChange];
 }
 
 - (void)deselectRow:(CPInteger)aRow
 {
     [_selectedRowIndexes removeIndex:aRow];
+    [self _noteSelectionDidChange];
 }
 
 - (CPInteger)numberOfSelectedColumns
@@ -1832,7 +1836,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         
      if(i)
          [self scrollRowToVisible:i];
-     [self _noteSelectionIsChanging];
+         [self _noteSelectionDidChange];
 	}
 	
 	if(key == CPDownArrowKeyCode)
@@ -1875,7 +1879,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         
      if(i)
          [self scrollRowToVisible:i];
-     [self _noteSelectionIsChanging];
+     [self _noteSelectionDidChange];
 	}
 }
 
