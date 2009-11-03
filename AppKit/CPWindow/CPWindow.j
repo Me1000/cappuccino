@@ -2378,7 +2378,14 @@ var interpolate = function(fromValue, toValue, progress)
 
 - (id)initWithWindow:(CPWindow)aWindow targetFrame:(CGRect)aTargetFrame
 {
-    self = [super initWithDuration:0.2 animationCurve:CPAnimationLinear];
+    var windowFrame = [aWindow frame],
+        deltaX = ABS(windowFrame.origin.x - aTargetFrame.origin.x),
+        deltaY = ABS(windowFrame.origin.y - aTargetFrame.origin.y),
+        deltaHeight = ABS(windowFrame.size.height - aTargetFrame.size.height),
+        deltaWidth = ABS(windowFrame.size.width - aTargetFrame.size.width),
+        delta = MAX(MAX(deltaX, deltaY), MAX(deltaHeight, deltaWidth)),
+        duration = MAX(0.2, MIN(0.4, delta * 0.0004));
+    self = [super initWithDuration: duration  animationCurve:CPAnimationLinear];
     
     if (self)
     {

@@ -401,7 +401,9 @@ CPPopUpButtonStatePullsDown = CPThemeState("pulls-down");
         count = [items count];
     
     for (; index < count; ++index)
-        items.push([items[index] title]);
+        titles.push([items[index] title]);
+    
+    return titles;
 }
 
 /*!
