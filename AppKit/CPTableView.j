@@ -193,7 +193,8 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         _cachedDataViews = { };
         _intercellSpacing = _CGSizeMake(0.0, 0.0);
         _rowHeight = 19.0;
-
+        
+        [self setSelectionHightlightColor:[CPColor selectionColor]];
         [self setGridColor:[CPColor grayColor]];
         [self setGridStyleMask:CPTableViewGridNone];
 
