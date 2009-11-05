@@ -140,6 +140,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     CPArray     _alternatingRowBackgroundColors;
 
     unsigned    _selectionHighlightMask;
+    CPColor     _selectionHightlightColor;
     unsigned    _currentHighlightedTableColumn;
     unsigned    _gridStyleMask;
     CPColor     _gridColor;
@@ -425,6 +426,21 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 - (void)setSelectionHighlightStyle:(unsigned)aSelectionHighlightStyle
 {
     _selectionHighlightMask = aSelectionHighlightStyle;
+    
+    if ([self selectionHighlightStyle] === CPTableViewSelectionHighlightStyleSourceList)
+        [self setSelectionHightlightColor:[CPColor selectionColorSourceView]];
+	else
+	    [self setSelectionHightlightColor:[CPColor selectionColor]];
+}
+
+- (void)setSelectionHightlightColor:(CPColor)aColor
+{
+    _selectionHightlightColor = aColor;
+}
+
+- (CPColor)selectionHightlightColor
+{
+    return _selectionHightlightColor;
 }
 
 /*
@@ -1536,13 +1552,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         indexes = [],
         rectSelector = @selector(rectOfRow:);
 
-    
-    // FIXME: This color thingy is terrible probably. 
-    //(Needs gradient implementation in core graphics)     
-    if ([self selectionHighlightStyle] === CPTableViewSelectionHighlightStyleSourceList)
-        [[CPColor selectionColorSourceView] setFill];
-	else
-	   [[CPColor selectionColor] setFill];
+	   [_selectionHightlightColor setFill];
 
     
     if ([_selectedRowIndexes count] >= 1)
@@ -1937,7 +1947,9 @@ var CPTableViewDataSourceKey        = @"CPTableViewDataSourceKey",
         _cachedDataViews = { };
         _rowHeight = [aCoder decodeFloatForKey:CPTableViewRowHeightKey];
         _intercellSpacing = [aCoder decodeSizeForKey:CPTableViewIntercellSpacingKey];
-
+        
+        _selectionHightlightColor = [CPColor selectionColor];
+        
         [self setGridColor:[CPColor grayColor]];
         [self setGridStyleMask:CPTableViewGridNone];
 
