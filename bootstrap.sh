@@ -37,19 +37,20 @@ if ! which -s "narwhal"; then
         
         mv $INSTALL_DIRECTORY/tlrobinson-narwhal-*/* $INSTALL_DIRECTORY/.
         rm -rf $INSTALL_DIRECTORY/tlrobinson-narwhal-*
-        
+        echo "$PATH"
+        echo "ok here"
+        echo `which -s "narwhal"`
         if ! which -s "narwhal"; then
+            echo "in the if!!!"
             export PATH="$INSTALL_DIRECTORY/bin:$PATH"
+            echo "::::$PATH>>>"
         fi
+        echo "ok, and after:"
+        echo `which -s "narwhal"`
     else
         echo "Narwhal required, aborting installation. To install Narwhal manually follow the instructions at http://narwhaljs.org/"
         exit 1
     fi
-fi
-
-if ! which -s "narwhal"; then
-    echo "Error: problem installing Narwhal"
-    exit 1
 fi
 
 echo "Installing necessary dependencies..."
