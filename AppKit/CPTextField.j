@@ -310,7 +310,7 @@ CPThemeStateEditable		= CPThemeState("editable");
         CPTextFieldDOMStandardInputElement = CPTextFieldDOMInputElement;
     }
     
-    /*if (CPFeatureIsCompatible(CPInputTypeCanBeChangedFeature))
+    if (CPFeatureIsCompatible(CPInputTypeCanBeChangedFeature))
     {
         if ([self isSecure])
             CPTextFieldDOMInputElement.type = "password";
@@ -318,7 +318,7 @@ CPThemeStateEditable		= CPThemeState("editable");
             CPTextFieldDOMInputElement.type = "text";
 
         return CPTextFieldDOMInputElement;
-    }*/
+    }
 
     if ([self isSecure])
     {
