@@ -51,13 +51,6 @@ var DoubleClick = "dblclick",
     TouchEnd    = "touchend",
     TouchCancel = "touchcancel";
 
-var ExcludedDOMElements = [];
-
-ExcludedDOMElements["INPUT"]     = YES;
-ExcludedDOMElements["SELECT"]    = YES;
-ExcludedDOMElements["TEXTAREA"]  = YES;
-ExcludedDOMElements["OPTION"]    = YES;
-
 // Define up here so compressor knows about em.
 var CPDOMEventGetClickCount,
     CPDOMEventStop,
@@ -301,16 +294,16 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
             [self updateFromNativeContentRect];
             [self _removeLayers];
 
-            theDocument.removeEvent("onmouseup", mouseEventCallback);
-            theDocument.removeEvent("onmousedown", mouseEventCallback);
-            theDocument.removeEvent("onmousemove", mouseEventCallback);
-            theDocument.removeEvent("ondblclick", mouseEventCallback);
+            theDocument.detachEvent("onmouseup", mouseEventCallback);
+            theDocument.detachEvent("onmousedown", mouseEventCallback);
+            theDocument.detachEvent("onmousemove", mouseEventCallback);
+            theDocument.detachEvent("ondblclick", mouseEventCallback);
 
-            theDocument.removeEvent("onkeyup", keyEventCallback);
-            theDocument.removeEvent("onkeydown", keyEventCallback);
-            theDocument.removeEvent("onkeypress", keyEventCallback);
+            theDocument.detachEvent("onkeyup", keyEventCallback);
+            theDocument.detachEvent("onkeydown", keyEventCallback);
+            theDocument.detachEvent("onkeypress", keyEventCallback);
 
-            _DOMWindow.removeEvent("onresize", resizeEventCallback);
+            _DOMWindow.detachEvent("onresize", resizeEventCallback);
 
             _DOMWindow.onmousewheel = NULL;
             theDocument.onmousewheel = NULL;
@@ -388,7 +381,14 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     }
 
     else if (type === "drag")
-        [dragServer draggingSourceUpdatedWithGlobalLocation:[CPPlatform isBrowser] ? location : _CGPointMake(aDOMEvent.screenX, aDOMEvent.screenY)];
+    {
+        var y = aDOMEvent.screenY;
+
+        if (CPFeatureIsCompatible(CPHTML5DragAndDropSourceYOffBy1))
+            y -= 1;
+
+        [dragServer draggingSourceUpdatedWithGlobalLocation:[CPPlatform isBrowser] ? location : _CGPointMake(aDOMEvent.screenX, y)];
+    }
 
     else if (type === "dragover" || type === "dragleave")
     {
@@ -452,8 +452,6 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                         (aDOMEvent.altKey ? CPAlternateKeyMask : 0) | 
                         (aDOMEvent.metaKey ? CPCommandKeyMask : 0);
                         
-    if (ExcludedDOMElements[sourceElement.tagName] && sourceElement != _DOMFocusElement && sourceElement != _DOMPasteboardElement)
-        return;
         
     //We want to stop propagation if this is a command key AND this character or keycode has been added to our blacklist
     StopDOMEventPropagation = !(modifierFlags & (CPControlKeyMask | CPCommandKeyMask)) ||
@@ -809,7 +807,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     
     else if (type === "mousedown")
     {
-        if (ExcludedDOMElements[sourceElement.tagName] && sourceElement != _DOMFocusElement)
+        if (sourceElement.tagName === "INPUT" && sourceElement != _DOMFocusElement)
         {
             if ([CPPlatform supportsDragAndDrop])
             {
