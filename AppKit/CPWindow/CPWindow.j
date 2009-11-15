@@ -257,6 +257,7 @@ var CPWindowSaveImage       = nil,
     BOOL                                _hasShadow;
     BOOL                                _isMovableByWindowBackground;
     unsigned                            _shadowStyle;
+    BOOL                                _showsResizeIndicator;
 
     BOOL                                _isDocumentEdited;
     BOOL                                _isDocumentSaving;
@@ -421,6 +422,8 @@ CPTexturedBackgroundWindowMask
 
         _defaultButtonEnabled = YES;
         _keyViewLoopIsDirty = YES;
+
+        [self setShowsResizeIndicator:_styleMask & CPResizableWindowMask];
     }
     
     return self;
@@ -501,6 +504,7 @@ CPTexturedBackgroundWindowMask
         [_windowView addSubview:_contentView];
         [_windowView setTitle:_title];
         [_windowView noteToolbarChanged];
+        [_windowView setShowsResizeIndicator:[self showsResizeIndicator]];
 
         [self setFrame:[self frameRectForContentRect:contentRect]];
     }
@@ -735,6 +739,9 @@ CPTexturedBackgroundWindowMask
 */
 - (void)orderOut:(id)aSender
 {
+    if ([self _sharesChromeWithPlatformWindow])
+        [_platformWindow orderOut:self];
+
     if ([_delegate respondsToSelector:@selector(windowWillClose:)])
         [_delegate windowWillClose:self];
 
@@ -746,9 +753,6 @@ CPTexturedBackgroundWindowMask
 
         CPApp._keyWindow = nil;
     }
-
-    if ([self _sharesChromeWithPlatformWindow])
-        [_platformWindow orderOut:self];
 }
 
 /*!
@@ -794,7 +798,7 @@ CPTexturedBackgroundWindowMask
 */
 - (BOOL)showsResizeIndicator
 {
-    return [_windowView showsResizeIndicator];
+    return _showsResizeIndicator;
 }
 
 /*!
@@ -802,8 +806,14 @@ CPTexturedBackgroundWindowMask
     @param shouldShowResizeIndicator \c YES sets the window to show its resize indicator.
 */
 - (void)setShowsResizeIndicator:(BOOL)shouldShowResizeIndicator
-{       
-    [_windowView setShowsResizeIndicator:shouldShowResizeIndicator];
+{
+    shouldShowResizeIndicator = !!shouldShowResizeIndicator;
+
+    if (_showsResizeIndicator === shouldShowResizeIndicator)
+        return;
+
+    _showsResizeIndicator = shouldShowResizeIndicator;
+    [_windowView setShowsResizeIndicator:[self showsResizeIndicator]];
 }
 
 /*!
