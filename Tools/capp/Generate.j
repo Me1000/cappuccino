@@ -1,7 +1,7 @@
 
 @import "Configuration.j"
 
-var OS = require("OS"),
+var OS = require("os"),
     SYSTEM = require("system"),
     FILE = require("file"),
     OBJJ = require("objective-j");
@@ -73,7 +73,7 @@ function gen(/*va_args*/)
     else if (!FILE.exists(destinationProject))
     {
         // FIXME???
-        OS.system("cp -vR " + sourceTemplate + " " + destinationProject);
+        FILE.copyTree(sourceTemplate, destinationProject);
 
         var files = FILE.glob(FILE.join(destinationProject, "**", "*")),
             index = 0,
