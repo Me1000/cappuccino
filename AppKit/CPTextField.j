@@ -30,18 +30,50 @@
 #include "Platform/DOM/CPDOMDisplayServer.h"
 
 
+/*
+    @global
+    @group CPLineBreakMode
+*/
 CPLineBreakByWordWrapping       = 0;
+/*
+    @global
+    @group CPLineBreakMode
+*/
 CPLineBreakByCharWrapping       = 1;
+/*
+    @global
+    @group CPLineBreakMode
+*/
 CPLineBreakByClipping           = 2;
+/*
+    @global
+    @group CPLineBreakMode
+*/
 CPLineBreakByTruncatingHead     = 3;
+/*
+    @global
+    @group CPLineBreakMode
+*/
 CPLineBreakByTruncatingTail     = 4;
+/*
+    @global
+    @group CPLineBreakMode
+*/
 CPLineBreakByTruncatingMiddle   = 5;
 
-CPTextFieldSquareBezel          = 0;    /*! A textfield bezel with a squared corners. */
-CPTextFieldRoundedBezel         = 1;    /*! A textfield bezel with rounded corners. */
+/*
+    A textfield bezel with a squared corners.
+	@global
+	@group CPTextFieldBezelStyle
+*/
+CPTextFieldSquareBezel          = 0;
+/*
+    A textfield bezel with rounded corners.
+	@global
+	@group CPTextFieldBezelStyle
+*/
+CPTextFieldRoundedBezel         = 1;
 
-CPTextFieldDidFocusNotification = @"CPTextFieldDidFocusNotification";
-CPTextFieldDidBlurNotification  = @"CPTextFieldDidBlurNotification";
 
 #if PLATFORM(DOM)
 
@@ -69,7 +101,7 @@ var CPSecureTextFieldCharacter = "\u2022";
 @implementation CPString (CPTextFieldAdditions)
 
 /*!
-    Returns the string (\c self).
+    Returns the string (<code>self</code>).
 */
 - (CPString)string
 {
@@ -77,7 +109,6 @@ var CPSecureTextFieldCharacter = "\u2022";
 }
 
 @end
-
 
 CPTextFieldStateRounded     = CPThemeState("rounded");
 CPTextFieldStatePlaceholder = CPThemeState("placeholder");
@@ -89,8 +120,6 @@ CPThemeStateEditable		= CPThemeState("editable");
 */
 @implementation CPTextField : CPControl
 {
-    BOOL                    _isEditing;
-
     BOOL                    _isEditable;
     BOOL                    _isSelectable;
     BOOL                    _isSecure;
@@ -213,23 +242,103 @@ CPThemeStateEditable		= CPThemeState("editable");
             return true;
         }
 
+        CPTextFieldKeyDownFunction = function(anEvent)
+        {
+            CPTextFieldTextDidChangeValue = [CPTextFieldInputOwner stringValue];
+
+            CPTextFieldKeyPressFunction(anEvent);
+
+            return true;
+        }
+
+        CPTextFieldKeyPressFunction = function(aDOMEvent)
+        {
+            aDOMEvent = aDOMEvent || window.event;
+
+            if (aDOMEvent.keyCode == CPReturnKeyCode || aDOMEvent.keyCode == CPTabKeyCode) 
+            {
+               var owner = CPTextFieldInputOwner;
+ 
+                if (aDOMEvent && aDOMEvent.keyCode == CPReturnKeyCode)
+                {
+                	if (!aDOMEvent.altKey)
+                	{
+                		if (aDOMEvent.preventDefault)
+                   			aDOMEvent.preventDefault(); 
+               			if (aDOMEvent.stopPropagation)
+                  		  	aDOMEvent.stopPropagation();
+             	   		aDOMEvent.cancelBubble = true;
+             	   		[self _inputElement].select(); //this causes only the first textfield that gets focus to select... All other textfields don't select... :S
+                	}
+                    //[owner sendAction:[owner action] to:[owner target]];    
+                    //[[owner window] makeFirstResponder:nil];
+                }
+                else if (aDOMEvent && aDOMEvent.keyCode == CPTabKeyCode)
+                {
+                	 if (aDOMEvent.preventDefault)
+                   		 aDOMEvent.preventDefault(); 
+               		 if (aDOMEvent.stopPropagation)
+                  		  aDOMEvent.stopPropagation();
+             	   	 aDOMEvent.cancelBubble = true;
+ 
+
+                    if (!aDOMEvent.shiftKey)
+                        [[owner window] selectNextKeyView:owner];
+                    else
+                        [[owner window] selectPreviousKeyView:owner];
+                }
+            } 
+
+            [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+        }
+
+        CPTextFieldKeyUpFunction = function()
+        {
+            [CPTextFieldInputOwner setStringValue:CPTextFieldDOMInputElement.value];
+
+            if ([CPTextFieldInputOwner stringValue] !== CPTextFieldTextDidChangeValue)
+            {
+                CPTextFieldTextDidChangeValue = [CPTextFieldInputOwner stringValue];
+                [CPTextFieldInputOwner textDidChange:[CPNotification notificationWithName:CPControlTextDidChangeNotification object:CPTextFieldInputOwner userInfo:nil]];
+            }
+
+            [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+        }
+
         CPTextFieldHandleBlur = function(anEvent)
         {            
+            var owner = CPTextFieldInputOwner;
             CPTextFieldInputOwner = nil;
 
             [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+        }
+
+        if (document.attachEvent)
+        {
+            CPTextFieldDOMInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
+            CPTextFieldDOMInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
+            CPTextFieldDOMInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
+        }
+        else
+        {
+            CPTextFieldDOMInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
+            CPTextFieldDOMInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
+            CPTextFieldDOMInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
         }
 
         //FIXME make this not onblur
         CPTextFieldDOMInputElement.onblur = CPTextFieldBlurFunction;
         
         CPTextFieldDOMStandardInputElement = CPTextFieldDOMInputElement;
-    }
+    } 
     
     /*if (CPFeatureIsCompatible(CPInputTypeCanBeChangedFeature))
     {
         if ([self isSecure])
             CPTextFieldDOMInputElement.type = "password";
+		else if ([self wraps])
+			alert("CPFeatureIsCompatible");
+			CPTextFieldDOMInputElement.type = "textarea";
         else
             CPTextFieldDOMInputElement.type = "text";
 
@@ -250,20 +359,18 @@ CPThemeStateEditable		= CPThemeState("editable");
             CPTextFieldDOMPasswordInputElement.style.outline = "none";
             CPTextFieldDOMPasswordInputElement.type = "password";
 
-           
-            
             if (document.attachEvent)
-            {
-                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
-                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
-                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
-            }
-            else
-            {
-                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
-                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
-                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
-            }
+       		{
+       	    	CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
+         		CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
+            	CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
+       		}
+        	else
+        	{
+            	CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
+            	CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
+            	CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
+        	}
 
             CPTextFieldDOMPasswordInputElement.onblur = CPTextFieldBlurFunction;
         }
@@ -310,7 +417,7 @@ CPThemeStateEditable		= CPThemeState("editable");
     {
         CPTextFieldDOMInputElement = CPTextFieldDOMStandardInputElement;
     }
-    
+    //alert("blah");
     return CPTextFieldDOMInputElement;
 }
 #endif
@@ -347,9 +454,8 @@ CPThemeStateEditable		= CPThemeState("editable");
         [self unsetThemeState:CPThemeStateEditable];
 }
 
-
 /*!
-    Returns \c YES if the textfield is currently editable by the user.
+    Returns <code>YES</code> if the textfield is currently editable by the user.
 */
 - (BOOL)isEditable
 {
@@ -358,7 +464,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 
 /*!
     Sets whether the field's text is selectable by the user.
-    @param aFlag \c YES makes the text selectable
+    @param aFlag <code>YES</code> makes the text selectable
 */
 - (void)setSelectable:(BOOL)aFlag
 {
@@ -366,7 +472,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 }
 
 /*!
-    Returns \c YES if the field's text is selectable by the user.
+    Returns <code>YES</code> if the field's text is selectable by the user.
 */
 - (BOOL)isSelectable
 {
@@ -375,7 +481,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 
 /*!
     Sets whether the field's text is secure.
-    @param aFlag \c YES makes the text secure
+    @param aFlag <code>YES</code> makes the text secure
 */
 - (void)setSecure:(BOOL)aFlag
 {
@@ -383,7 +489,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 }
 
 /*!
-    Returns \c YES if the field's text is secure (password entry).
+    Returns <code>YES</code> if the field's text is secure (password entry).
 */
 - (BOOL)isSecure
 {
@@ -393,7 +499,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 // Setting the Bezel Style
 /*!
     Sets whether the textfield will have a bezeled border.
-    @param shouldBeBezeled \c YES means the textfield will draw a bezeled border
+    @param shouldBeBezeled <code>YES</code> means the textfield will draw a bezeled border
 */
 - (void)setBezeled:(BOOL)shouldBeBezeled
 {
@@ -404,7 +510,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 }
 
 /*!
-    Returns \c YES if the textfield draws a bezeled border.
+    Returns <code>YES</code> if the textfield draws a bezeled border.
 */
 - (BOOL)isBezeled
 {
@@ -438,7 +544,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 
 /*!
     Sets whether the textfield will have a border drawn.
-    @param shouldBeBordered \c YES makes the textfield draw a border
+    @param shouldBeBordered <code>YES</code> makes the textfield draw a border
 */
 - (void)setBordered:(BOOL)shouldBeBordered
 {
@@ -449,7 +555,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 }
 
 /*!
-    Returns \c YES if the textfield has a border.
+    Returns <code>YES</code> if the textfield has a border.
 */
 - (BOOL)isBordered
 {
@@ -458,7 +564,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 
 /*!
     Sets whether the textfield will have a background drawn.
-    @param shouldDrawBackground \c YES makes the textfield draw a background
+    @param shouldDrawBackground <code>YES</code> makes the textfield draw a background
 */
 - (void)setDrawsBackground:(BOOL)shouldDrawBackground
 {
@@ -472,7 +578,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 }
 
 /*!
-    Returns \c YES if the textfield draws a background.
+    Returns <code>YES</code> if the textfield draws a background.
 */
 - (BOOL)drawsBackground
 {
@@ -511,18 +617,15 @@ CPThemeStateEditable		= CPThemeState("editable");
 /* @ignore */
 - (BOOL)becomeFirstResponder
 {
-#if PLATFORM(DOM)
     if (CPTextFieldInputOwner && [CPTextFieldInputOwner window] !== [self window])
         [[CPTextFieldInputOwner window] makeFirstResponder:nil];
-#endif
 
     [self setThemeState:CPThemeStateEditing];
+   
 
     [self _updatePlaceholderState];
 
     [self setNeedsLayout];
-
-    _isEditing = NO;
 
 #if PLATFORM(DOM)
 
@@ -546,7 +649,9 @@ CPThemeStateEditable		= CPThemeState("editable");
     var contentRect = [self contentRectForBounds:[self bounds]];
 
     element.style.top = _CGRectGetMinY(contentRect) + "px";
-    element.style.left = (_CGRectGetMinX(contentRect) - 1) + "px"; // why -1?
+    element.style.left = (_CGRectGetMinX(contentRect) - 1) + "px"; // why -1? //will be -3 if it wraps
+    if([self wraps])
+    	element.style.left = (_CGRectGetMinX(contentRect) - 3) + "px"; //will be -3 if it wraps	
     element.style.width = _CGRectGetWidth(contentRect) + "px";
     element.style.height = _CGRectGetHeight(contentRect) + "px";
 
@@ -554,12 +659,13 @@ CPThemeStateEditable		= CPThemeState("editable");
 
     window.setTimeout(function() 
     { 
-        element.focus();
+        element.focus(); 
         CPTextFieldInputOwner = self;
     }, 0.0);
  
-    element.value = [self stringValue];
-
+    //post CPControlTextDidBeginEditingNotification
+    [self textDidBeginEditing:[CPNotification notificationWithName:CPControlTextDidBeginEditingNotification object:self userInfo:nil]];
+    
     [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
     
     CPTextFieldInputIsActive = YES;
@@ -573,7 +679,6 @@ CPThemeStateEditable		= CPThemeState("editable");
         document.body.onselectstart = function () {};
     }
     
-    [self textDidFocus:[CPNotification notificationWithName:CPTextFieldDidFocusNotification object:self userInfo:nil]];
 #endif
 
     return YES;
@@ -620,16 +725,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 #endif
 
     //post CPControlTextDidEndEditingNotification
-    if (_isEditing)
-    {
-        _isEditing = NO;
-        [self textDidEndEditing:[CPNotification notificationWithName:CPControlTextDidEndEditingNotification object:self userInfo:nil]];
-
-        if ([self sendsActionOnEndEditing])
-            [self sendAction:[self action] to:[self target]];
-    }
-
-    [self textDidBlur:[CPNotification notificationWithName:CPTextFieldDidBlurNotification object:self userInfo:nil]];
+    [self textDidEndEditing:[CPNotification notificationWithName:CPControlTextDidBeginEditingNotification object:self userInfo:nil]];
 
     return YES;
 }
@@ -643,88 +739,8 @@ CPThemeStateEditable		= CPThemeState("editable");
         return [[self nextResponder] mouseDown:anEvent];
 }
 
-- (void)mouseUp:(CPEvent)anEvent
-{
-    if (![self isEditable] || ![self isEnabled])
-        [[self nextResponder] mouseUp:anEvent];
-}
-
-- (void)mouseDragged:(CPEvent)anEvent
-{
-    if (![self isEditable] || ![self isEnabled])
-        [[self nextResponder] mouseDragged:anEvent];
-}
-
-- (void)keyUp:(CPEvent)anEvent
-{
-    var oldValue = [self stringValue];
-    [self _setStringValue:[self _inputElement].value];
-
-    if (oldValue !== [self stringValue])
-    {
-        if (!_isEditing)
-        {
-            _isEditing = YES;
-            [self textDidBeginEditing:[CPNotification notificationWithName:CPControlTextDidBeginEditingNotification object:self userInfo:nil]];
-        }
-
-        [self textDidChange:[CPNotification notificationWithName:CPControlTextDidChangeNotification object:self userInfo:nil]];
-    }
-
-    [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
-}
-
-- (void)keyDown:(CPEvent)anEvent
-{
-    if ([anEvent keyCode] === CPReturnKeyCode)
-    {
-        if (_isEditing)
-        {
-            _isEditing = NO;
-            [self textDidEndEditing:[CPNotification notificationWithName:CPControlTextDidEndEditingNotification object:self userInfo:nil]];
-        }
-
-        [self sendAction:[self action] to:[self target]];
-        [self selectText:nil];
-
-        [[[self window] platformWindow] _propagateCurrentDOMEvent:NO];
-    }
-    else if ([anEvent keyCode] === CPTabKeyCode)
-    {
-        if ([anEvent modifierFlags] & CPShiftKeyMask)
-            [[self window] selectPreviousKeyView:self];
-        else
-            [[self window] selectNextKeyView:self];
-
-        [[[self window] platformWindow] _propagateCurrentDOMEvent:NO];
-    }
-    else
-        [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
-
-    [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
-}
-
-
-- (void)textDidBlur:(CPNotification)note
-{
-    //this looks to prevent false propagation of notifications for other objects
-    if([note object] != self)
-        return;
-
-    [[CPNotificationCenter defaultCenter] postNotification:note];
-}
-
-- (void)textDidFocus:(CPNotification)note
-{
-    //this looks to prevent false propagation of notifications for other objects
-    if([note object] != self)
-        return;
-
-    [[CPNotificationCenter defaultCenter] postNotification:note];
-}
-
 /*!
-    Returns the string the text field.
+    Returns the string of the text field.
 */
 - (id)objectValue
 {
@@ -734,22 +750,9 @@ CPThemeStateEditable		= CPThemeState("editable");
 /*
     @ignore
 */
-- (void)_setStringValue:(id)aValue
-{
-    [self willChangeValueForKey:@"objectValue"];
-    [super setObjectValue:String(aValue)];
-    [self _updatePlaceholderState];
-    [self didChangeValueForKey:@"objectValue"];
-}
-
 - (void)setObjectValue:(id)aValue
 {
     [super setObjectValue:aValue];
-
-#if PLATFORM(DOM)
-    if (CPTextFieldInputOwner === self)
-        [self _inputElement].value = aValue;
-#endif
 
     [self _updatePlaceholderState];
 }
@@ -758,7 +761,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 {
     var string = [self stringValue];
 
-    if ((!string || string.length === 0) && ![self hasThemeState:CPThemeStateEditing])
+    if ((!string || [string length] === 0) && ![self hasThemeState:CPThemeStateEditing])
         [self setThemeState:CPTextFieldStatePlaceholder];
     else
         [self unsetThemeState:CPTextFieldStatePlaceholder];
@@ -855,8 +858,6 @@ CPThemeStateEditable		= CPThemeState("editable");
         [defaultCenter removeObserver:_delegate name:CPControlTextDidBeginEditingNotification object:self];
         [defaultCenter removeObserver:_delegate name:CPControlTextDidChangeNotification object:self];
         [defaultCenter removeObserver:_delegate name:CPControlTextDidEndEditingNotification object:self];
-        [defaultCenter removeObserver:_delegate name:CPTextFieldDidFocusNotification object:self];
-        [defaultCenter removeObserver:_delegate name:CPTextFieldDidBlurNotification object:self];
     }
     
     _delegate = aDelegate;
@@ -883,19 +884,6 @@ CPThemeStateEditable		= CPThemeState("editable");
                    name:CPControlTextDidEndEditingNotification
                  object:self];
 
-    if ([_delegate respondsToSelector:@selector(controlTextDidFocus:)])
-        [defaultCenter
-            addObserver:_delegate
-               selector:@selector(controlTextDidFocus:)
-                   name:CPTextFieldDidFocusNotification
-                 object:self];
-
-    if ([_delegate respondsToSelector:@selector(controlTextDidBlur:)])
-        [defaultCenter
-            addObserver:_delegate
-               selector:@selector(controlTextDidBlur:)
-                   name:CPTextFieldDidBlurNotification
-                 object:self];
 }
 
 - (id)delegate
@@ -1051,6 +1039,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 	return _wraps;
 }
 
+
 @end
 
 var secureStringForString = function(aString)
@@ -1059,7 +1048,13 @@ var secureStringForString = function(aString)
     if (!aString)
         return "";
 
-    return Array(aString.length+1).join(CPSecureTextFieldCharacter);
+    var secureString = "",
+        length = aString.length;
+
+    while (length--)
+        secureString += CPSecureTextFieldCharacter;
+
+    return secureString;
 }
 
 
