@@ -1309,7 +1309,8 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         for (; rowIndex < rowsCount; ++rowIndex)
         {
             var row = rowArray[rowIndex],
-                dataView = [self _newDataViewForRow:row tableColumn:tableColumn];
+                dataView = [self _newDataViewForRow:row tableColumn:tableColumn],
+                isTextField = [dataView isKindOfClass:[CPTextField class]];
 
             [dataView setFrame:[self frameOfDataViewAtColumn:column row:row]];
             [dataView setObjectValue:[self _objectValueForTableColumn:tableColumn row:row]];
@@ -1322,15 +1323,17 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
             if (_editingCellIndex && _editingCellIndex.x === column && _editingCellIndex.y === row) {
                 _editingCellIndex = undefined;
                 
-                [dataView setEditable:YES];
-                [dataView setSendsActionOnEndEditing:YES];
-                [dataView setSelectable:YES];
-                [dataView selectText:nil]; // Doesn't seem to actually work (yet?).
+                if (isTextField) {
+                    [dataView setEditable:YES];
+                    [dataView setSendsActionOnEndEditing:YES];
+                    [dataView setSelectable:YES];
+                    [dataView selectText:nil]; // Doesn't seem to actually work (yet?).
+                }
                 [dataView setTarget:self];
                 [dataView setAction:@selector(_commitDataViewObjectValue:)];
                 dataView.tableViewEditedColumnObj = tableColumn;
                 dataView.tableViewEditedRowIndex = row;
-            } else {
+            } else if (isTextField) {
                 [dataView setEditable:NO];
                 [dataView setSelectable:NO];
             }
