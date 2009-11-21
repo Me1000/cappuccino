@@ -1905,7 +1905,7 @@ var CPTableViewDataSourceKey        = @"CPTableViewDataSourceKey",
 
 + (CPColor)selectionColor
 {
-	return [CPColor colorWithHexString:@"5f83b9"];
+	return [CPColor colorWithHexString:@"c2cfdf"];
 }
 
 + (CPColor)selectionColorSourceView
