@@ -263,6 +263,8 @@ var CPAlertWarningImage,
     [button setAction:@selector(_notifyDelegate:)];
     
     [button setBezelStyle:(_windowStyle == CPHUDBackgroundWindowMask) ? CPHUDBezelStyle : CPRoundRectBezelStyle];
+    if(_windowStyle === CPHUDBackgroundWindowMask)
+	        [button setTheme:[CPTheme themeNamed: "Aristo-HUD"]];
     [[_alertPanel contentView] addSubview:button];
     
     if (_buttonCount == 0)
