@@ -187,7 +187,7 @@ var CPDateReferenceDate = new Date(Date.UTC(2001,1,1,0,0,0,0));
 
 var CPDateTimeKey = @"CPDateTimeKey";
 
-@implementation CPDate (CPCoding)
+/*@implementation CPDate (CPCoding)
 
 - (id)initWithCoder:(CPCoder)aCoder
 {
@@ -204,7 +204,7 @@ var CPDateTimeKey = @"CPDateTimeKey";
     [aCoder encodeInt:self.getTime() forKey:CPDateTimeKey];
 }
 
-@end
+@end*/
 
 @implementation CPDate (CPCoder)
 
