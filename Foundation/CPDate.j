@@ -175,19 +175,24 @@ var CPDateReferenceDate = new Date(Date.UTC(2001,1,1,0,0,0,0));
     Returns the date as a string in the international format 
     YYYY-MM-DD HH:MM:SS ±HHMM.
 */
-- (CPString)description
+/*- (CPString)description
 {
     var hours = Math.floor(self.getTimezoneOffset() / 60),
         minutes = self.getTimezoneOffset() - hours * 60;
 
     return [CPString stringWithFormat:@"%04d-%02d-%02d %02d:%02d:%02d +%02d%02d", self.getFullYear(), self.getMonth()+1, self.getDate(), self.getHours(), self.getMinutes(), self.getSeconds(), hours, minutes];
+}*/
+
+- (CPString)description
+{
+    return self.toString(); // FIXME: not same format as NSDate
 }
 
 @end
 
 var CPDateTimeKey = @"CPDateTimeKey";
 
-@implementation CPDate (CPCoding)
+/*@implementation CPDate (CPCoding)
 
 - (id)initWithCoder:(CPCoder)aCoder
 {
@@ -204,9 +209,9 @@ var CPDateTimeKey = @"CPDateTimeKey";
     [aCoder encodeInt:self.getTime() forKey:CPDateTimeKey];
 }
 
-@end
+@end*/
 
-/*@implementation CPDate (CPCoder)
+@implementation CPDate (CPCoder)
 
 - (id)initWithCoder:(CPCoder)aCoder
 {
@@ -218,6 +223,6 @@ var CPDateTimeKey = @"CPDateTimeKey";
     [aCoder encodeObject:[self description] forKey:"date"];
 }
     
-@end*/
+@end
 
 Date.prototype.isa = CPDate;
