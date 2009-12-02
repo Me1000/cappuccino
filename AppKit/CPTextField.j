@@ -680,14 +680,18 @@ CPThemeStateEditable		= CPThemeState("editable");
 {
     if ([anEvent keyCode] === CPReturnKeyCode)
     {
-        if (_isEditing)
+        if (_isEditing && ![self wraps])
         {
             _isEditing = NO;
             [self textDidEndEditing:[CPNotification notificationWithName:CPControlTextDidEndEditingNotification object:self userInfo:nil]];
         }
-
-        [self sendAction:[self action] to:[self target]];
-        [self selectText:nil];
+        
+        if(![self wraps])
+        {
+            [self selectText:nil];
+            [self sendAction:[self action] to:[self target]];
+        }
+        
 
         [[[self window] platformWindow] _propagateCurrentDOMEvent:NO];
     }
