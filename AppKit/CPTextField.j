@@ -688,8 +688,14 @@ CPThemeStateEditable		= CPThemeState("editable");
         
         if(![self wraps])
         {
-            //[self selectText:nil];
-            //[self sendAction:[self action] to:[self target]];
+            [self selectText:nil];
+            [self sendAction:[self action] to:[self target]];
+            [[[self window] platformWindow] _propagateCurrentDOMEvent:NO];
+            [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+            return;
+        }
+        else
+        {
             [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
 
             [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
