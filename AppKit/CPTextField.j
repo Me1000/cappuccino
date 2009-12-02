@@ -181,7 +181,141 @@ CPThemeStateEditable		= CPThemeState("editable");
                                        forKeys:[@"bezel-inset", @"content-inset", @"bezel-color", @"focus-ring-color", @"focus-inset"]];
 }
 
-/*PUT IT BACK HERE*/
+/* @ignore */
+#if PLATFORM(DOM)
+- (DOMElement)_inputElement
+{
+    if (!CPTextFieldDOMInputElement)
+    {
+        CPTextFieldDOMInputElement = document.createElement("input");
+        CPTextFieldDOMInputElement.style.position = "absolute";
+        CPTextFieldDOMInputElement.style.border = "0px";
+        CPTextFieldDOMInputElement.style.padding = "0px";
+        CPTextFieldDOMInputElement.style.margin = "0px";
+        CPTextFieldDOMInputElement.style.whiteSpace = "pre";
+        CPTextFieldDOMInputElement.style.background = "transparent";
+        CPTextFieldDOMInputElement.style.outline = "none";
+
+        CPTextFieldBlurFunction = function(anEvent)
+        {
+            if (CPTextFieldInputOwner && CPTextFieldInputOwner._DOMElement != CPTextFieldDOMInputElement.parentNode)
+                return;
+
+            if (!CPTextFieldInputResigning)
+            {
+                [[CPTextFieldInputOwner window] makeFirstResponder:nil];
+                return;
+            }
+
+            CPTextFieldHandleBlur(anEvent, CPTextFieldDOMInputElement);
+            CPTextFieldInputDidBlur = YES;
+
+            return true;
+        }
+
+        CPTextFieldHandleBlur = function(anEvent)
+        {            
+            CPTextFieldInputOwner = nil;
+
+            [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+        }
+
+        //FIXME make this not onblur
+        CPTextFieldDOMInputElement.onblur = CPTextFieldBlurFunction;
+        
+        CPTextFieldDOMStandardInputElement = CPTextFieldDOMInputElement;
+    }
+    
+    /*if (CPFeatureIsCompatible(CPInputTypeCanBeChangedFeature))
+    {
+        if ([self isSecure])
+            CPTextFieldDOMInputElement.type = "password";
+        else if([self wraps])
+            
+        else
+            CPTextFieldDOMInputElement.type = "textarea";
+
+        return CPTextFieldDOMInputElement;
+    }*/
+
+    if ([self isSecure])
+    {
+        if (!CPTextFieldDOMPasswordInputElement)
+        {
+            CPTextFieldDOMPasswordInputElement = document.createElement("input");
+            CPTextFieldDOMPasswordInputElement.style.position = "absolute";
+            CPTextFieldDOMPasswordInputElement.style.border = "0px";
+            CPTextFieldDOMPasswordInputElement.style.padding = "0px";
+            CPTextFieldDOMPasswordInputElement.style.margin = "0px";
+            CPTextFieldDOMPasswordInputElement.style.whiteSpace = "pre";
+            CPTextFieldDOMPasswordInputElement.style.background = "transparent";
+            CPTextFieldDOMPasswordInputElement.style.outline = "none";
+            CPTextFieldDOMPasswordInputElement.type = "password";
+
+           
+            
+            if (document.attachEvent)
+            {
+                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
+                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
+                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
+            }
+            else
+            {
+                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
+                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
+                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
+            }
+
+            CPTextFieldDOMPasswordInputElement.onblur = CPTextFieldBlurFunction;
+        }
+        
+        CPTextFieldDOMInputElement = CPTextFieldDOMPasswordInputElement;
+    }
+    else if ([self wraps])
+    { 
+    	//alert("wraps");
+       	if (!CPTextFieldDOMMultilineInputElement)
+        {
+      		//console.log("here");
+        	CPTextFieldDOMMultilineInputElement = document.createElement("textarea");
+        	CPTextFieldDOMMultilineInputElement.style.resize = "none";
+        	CPTextFieldDOMMultilineInputElement.style.overflow = "hidden";
+            CPTextFieldDOMMultilineInputElement.style.position = "absolute";
+            CPTextFieldDOMMultilineInputElement.style.border = "0px";
+            CPTextFieldDOMMultilineInputElement.style.padding = "0px";
+            CPTextFieldDOMMultilineInputElement.style.margin = "0px";
+            CPTextFieldDOMMultilineInputElement.style.whiteSpace = "pre";
+            CPTextFieldDOMMultilineInputElement.style.background = "transparent";
+            CPTextFieldDOMMultilineInputElement.style.outline = "none";
+			
+			if (document.attachEvent)
+       		{
+       	    	CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
+         		CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
+            	CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
+       		}
+        	else
+        	{
+            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
+            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
+            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
+        	}
+			
+            CPTextFieldDOMMultilineInputElement.onblur = CPTextFieldBlurFunction;
+        }
+        
+        CPTextFieldDOMInputElement = CPTextFieldDOMMultilineInputElement;
+       		
+    }
+    else
+    {
+        CPTextFieldDOMInputElement = CPTextFieldDOMStandardInputElement;
+    }
+    
+    return CPTextFieldDOMInputElement;
+}
+#endif
 
 - (id)initWithFrame:(CGRect)aFrame
 {
