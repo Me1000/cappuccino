@@ -1923,6 +1923,7 @@ CPTexturedBackgroundWindowMask
     [aSheet _setFrame:endFrame delegate:self duration:0.2 curve:CPAnimationEaseOut];
 
     // Should run the main loop here until _isAnimating = FALSE
+    [aSheet orderFront:self];
     [aSheet becomeKeyWindow];    
 }
 
