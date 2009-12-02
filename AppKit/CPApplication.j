@@ -845,6 +845,8 @@ CPRunContinuesResponse  = -1002;
         return;
     }
     
+    [aSheet orderFront:self];
+    
     [aWindow _attachSheet:aSheet modalDelegate:aModalDelegate didEndSelector:aDidEndSelector contextInfo:aContextInfo];
 }
 
