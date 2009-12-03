@@ -134,7 +134,8 @@ var _CPCibWindowTemplateMinSizeKey                  = @"_CPCibWindowTemplateMinS
         [theWindow setMinSize:_minSize];
     if (_maxSize)
         [theWindow setMaxSize:_maxSize];
-    //[theWindow setLevel:CPFloatingWindowLevel];
+        
+    [theWindow setLevel:CPNormalWindowLevel];
 
    //[result setHidesOnDeactivate:(_wtFlags&0x80000000)?YES:NO];
     [theWindow setTitle:_windowTitle];
