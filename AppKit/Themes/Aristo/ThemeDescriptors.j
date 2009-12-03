@@ -309,7 +309,7 @@
 
     return scroller;
 }
-
+/*
 + (CPTextField)themedLabelTextFieldWithFocusRing
 {
     var textfield = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, 0.0, 60.0, 29.0)],
@@ -385,7 +385,7 @@
 
     return textfield;
 }*/
-
+/*
 + (CPTextField)themedRoundedTextField
 {   
     var textfield = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, 0.0, 60.0, 30.0)],
@@ -426,7 +426,7 @@
     [textfield setValue:CGSizeMake(-1.0, 30.0) forThemeAttribute:@"max-size" inState:CPThemeStateBezeled|CPTextFieldStateRounded];
 
     return textfield;
-}
+}*/
 
 + (CPRadioButton)themedRadioButton
 {
