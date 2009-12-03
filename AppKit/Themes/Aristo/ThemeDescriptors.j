@@ -585,7 +585,7 @@
     [segmentedControl setWidth:60.0 forSegment:1];
     [segmentedControl setLabel:@"bar" forSegment:1];
     [segmentedControl setTag:2 forSegment:1];
-
+ 
     [segmentedControl setWidth:35.0 forSegment:2];
     [segmentedControl setLabel:@"1" forSegment:2];
     [segmentedControl setTag:3 forSegment:2];
@@ -613,47 +613,47 @@
         pushedHighlightedCenterBezelColor = PatternColor([_CPCibCustomResource imageResourceWithName:@"segmented-control-bezel-pushed-highlighted-center.png" size:CGSizeMake(1.0, 24.0)]),
         pushedHighlightedLeftBezelColor = PatternColor([_CPCibCustomResource imageResourceWithName:@"segmented-control-bezel-pushed-highlighted-left.png" size:CGSizeMake(4.0, 24.0)]),
         pushedHighlightedRightBezelColor = PatternColor([_CPCibCustomResource imageResourceWithName:@"segmented-control-bezel-pushed-highlighted-right.png" size:CGSizeMake(4.0, 24.0)]);
-
+ 
     [segmentedControl setValue:centerBezelColor forThemeAttribute:@"center-segment-bezel-color" inState:CPThemeStateNormal];
     [segmentedControl setValue:inactiveCenterBezelColor forThemeAttribute:@"center-segment-bezel-color" inState:CPThemeStateDisabled];
     [segmentedControl setValue:inactiveHighlightedCenterBezelColor forThemeAttribute:@"center-segment-bezel-color" inState:CPThemeStateSelected|CPThemeStateDisabled];
     [segmentedControl setValue:centerHighlightedBezelColor forThemeAttribute:@"center-segment-bezel-color" inState:CPThemeStateSelected];
     [segmentedControl setValue:pushedCenterBezelColor forThemeAttribute:@"center-segment-bezel-color" inState:CPThemeStateHighlighted];
     [segmentedControl setValue:pushedHighlightedCenterBezelColor forThemeAttribute:@"center-segment-bezel-color" inState:CPThemeStateHighlighted|CPThemeStateSelected];
-
+ 
     [segmentedControl setValue:dividerBezelColor forThemeAttribute:@"divider-bezel-color" inState:CPThemeStateNormal];
     [segmentedControl setValue:inactiveDividerBezelColor forThemeAttribute:@"divider-bezel-color" inState:CPThemeStateDisabled];
     [segmentedControl setValue:inactiveHighlightedDividerBezelColor forThemeAttribute:@"divider-bezel-color" inState:CPThemeStateSelected|CPThemeStateDisabled];
     [segmentedControl setValue:dividerHighlightedBezelColor forThemeAttribute:@"divider-bezel-color" inState:CPThemeStateSelected];
     [segmentedControl setValue:dividerBezelColor forThemeAttribute:@"divider-bezel-color" inState:CPThemeStateHighlighted];
-
+ 
     [segmentedControl setValue:rightBezelColor forThemeAttribute:@"right-segment-bezel-color" inState:CPThemeStateNormal];
     [segmentedControl setValue:inactiveRightBezelColor forThemeAttribute:@"right-segment-bezel-color" inState:CPThemeStateDisabled];
     [segmentedControl setValue:inactiveHighlightedRightBezelColor forThemeAttribute:@"right-segment-bezel-color" inState:CPThemeStateSelected|CPThemeStateDisabled];
     [segmentedControl setValue:rightHighlightedBezelColor forThemeAttribute:@"right-segment-bezel-color" inState:CPThemeStateSelected];
     [segmentedControl setValue:pushedRightBezelColor forThemeAttribute:@"right-segment-bezel-color" inState:CPThemeStateHighlighted];
     [segmentedControl setValue:pushedHighlightedRightBezelColor forThemeAttribute:@"right-segment-bezel-color" inState:CPThemeStateHighlighted|CPThemeStateSelected];
-
+ 
     [segmentedControl setValue:leftBezelColor forThemeAttribute:@"left-segment-bezel-color" inState:CPThemeStateNormal];
     [segmentedControl setValue:inactiveLeftBezelColor forThemeAttribute:@"left-segment-bezel-color" inState:CPThemeStateDisabled];
     [segmentedControl setValue:inactiveHighlightedLeftBezelColor forThemeAttribute:@"left-segment-bezel-color" inState:CPThemeStateSelected|CPThemeStateDisabled];
     [segmentedControl setValue:leftHighlightedBezelColor forThemeAttribute:@"left-segment-bezel-color" inState:CPThemeStateSelected];
     [segmentedControl setValue:pushedLeftBezelColor forThemeAttribute:@"left-segment-bezel-color" inState:CPThemeStateHighlighted];
     [segmentedControl setValue:pushedHighlightedLeftBezelColor forThemeAttribute:@"left-segment-bezel-color" inState:CPThemeStateHighlighted|CPThemeStateSelected];
-
-    [segmentedControl setValue:CGInsetMake(0.0, 4.0, 0.0, 4.0) forThemeAttribute:@"content-inset" inState:CPThemeStateNormal];
-
+ 
+    [segmentedControl setValue:CGInsetMake(0.0, 5.0, 0.0, 4.0) forThemeAttribute:@"content-inset" inState:CPThemeStateNormal];
+ 
     [segmentedControl setValue:CGInsetMake(0.0, 0.0, 0.0, 0.0) forThemeAttribute:@"bezel-inset" inState:CPThemeStateNormal];
-
+ 
     [segmentedControl setValue:[CPFont boldSystemFontOfSize:12.0] forThemeAttribute:@"font"];
     [segmentedControl setValue:[CPColor colorWithCalibratedWhite:79.0 / 255.0 alpha:1.0] forThemeAttribute:@"text-color"];
     [segmentedControl setValue:[CPColor colorWithCalibratedWhite:240.0 / 255.0 alpha:1.0] forThemeAttribute:@"text-shadow-color"];
     [segmentedControl setValue:CGSizeMake(0.0, 1.0) forThemeAttribute:@"text-shadow-offset"];
     [segmentedControl setValue:CPLineBreakByTruncatingTail forThemeAttribute:@"line-break-mode"];
-
+ 
     [segmentedControl setValue:1.0 forThemeAttribute:@"divider-thickness"];
     [segmentedControl setValue:24.0 forThemeAttribute:@"default-height"];
-
+ 
     return segmentedControl;
 }
 
