@@ -79,6 +79,7 @@ var CPSecureTextFieldCharacter = "\u2022";
 @end
 
 
+
 CPTextFieldStateRounded     = CPThemeState("rounded");
 CPTextFieldStatePlaceholder = CPThemeState("placeholder");
 CPThemeStateEditable		= CPThemeState("editable");
