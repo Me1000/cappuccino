@@ -78,7 +78,7 @@ var NSBorderlessWindowMask          = 0x00,
            _windowRect.origin.y -= [NSMainMenuView menuHeight];   // compensation for the additional menu bar
         */
         
-        _level = CPNormalWindowLevel;
+        
    }
 
    return self;

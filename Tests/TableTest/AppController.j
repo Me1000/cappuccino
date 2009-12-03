@@ -42,7 +42,7 @@ CPLogRegister(CPLogConsole);
 
     iconImage = [[CPImage alloc] initWithContentsOfFile:"http://cappuccino.org/images/favicon.png" size:CGSizeMake(16,16)];
 
-    var textDataView = [CPTextField new];
+    var textDataView = [tableCell new];
 
 //    [textDataView setBackgroundColor:[[CPColor redColor] colorWithAlphaComponent:0.5]];
 
@@ -61,7 +61,7 @@ CPLogRegister(CPLogConsole);
         [tableView addTableColumn:column];
     }
 
-    [tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
+    //[tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
 
     var scrollView = [[CPScrollView alloc] initWithFrame:[view bounds]];
 
@@ -74,11 +74,15 @@ CPLogRegister(CPLogConsole);
 
     [tableView setDelegate:self];
     [tableView setDataSource:self];
+    
+    
+    //[tableView scrollColumnToVisible:7];
+    //[tableView scrollRowToVisible:100];
 }
 
 - (int)numberOfRowsInTableView:(CPTableView)tableView
 {
-    return 700000;
+    return 200;
 }
 
 - (id)tableView:(CPTableView)tableView objectValueForTableColumn:(CPTableColumn)tableColumn row:(int)row
@@ -108,11 +112,13 @@ CPLogRegister(CPLogConsole);
 - (BOOL)tableView:(CPTableView)aTableView shouldSelectRow:(int)rowIndex
 {
 	//CPLog.debug(@"shouldSelectRow %d", rowIndex);
-	for (var i = 2, sqrt = SQRT(rowIndex+1); i <= sqrt; i++)
-	    if ((rowIndex+1) % i === 0)
-	        return false;
-
-	return true;
+	//for (var i = 2, sqrt = SQRT(rowIndex+1); i <= sqrt; i++)
+	  //  if ((rowIndex+1) % i === 0)
+	        //return false; 
+   // if(rowIndex % 2 == 1)
+   // 	return true;
+   // else
+        return true;
 }
 
 - (BOOL)selectionShouldChangeInTableView:(CPTableView)aTableView
@@ -121,10 +127,59 @@ CPLogRegister(CPLogConsole);
 	return YES;
 }
 
+- (void)tableViewSelectionDidChange:(id)blah
+{
+    console.log("chaged");
+}
+
 //- (CPIndexSet)tableView:(CPTableView)tableView selectionIndexesForProposedSelection:(CPIndexSet)proposedSelectionIndexes
 //{
 //	CPLog.debug(@"selectionIndexesForProposedSelection %@", [proposedSelectionIndexes description]);
 //	return proposedSelectionIndexes;
 //}
+
+@end
+
+@implementation CPTableView (newstuff)
+- (void)FIXMESelectRow:(CGRect)aRect
+{
+    var _columnArray = _tableColumns;
+    var columnIndex = 0,
+        columnsCount = _columnArray.length;
+    //console.log("BEFORE LOOP");
+    for (; columnIndex < columnsCount; ++columnIndex)
+    {
+        var column = _columnArray[columnIndex],
+            tableColumn = _tableColumns[column],
+            tableColumnUID = [tableColumn UID];
+    
+        if (!_dataViewsForTableColumns[tableColumnUID])
+            _dataViewsForTableColumns[tableColumnUID] = [];
+        
+        dataView = _dataViewsForTableColumns[tableColumnUID][row];
+        console.log(dataView);
+        if ([dataView respondsToSelector:@selector(setSelected:)])
+        {
+            console.log("respondsToSelector");
+            if([_selectedRowIndexes containsIndex:row])
+                [dataView setSelected:YES];
+            else
+                [dataView setSelected:NO];
+        }
+    }
+}
+@end
+
+@implementation tableCell : CPTextField
+{}
+
+- (void)setSelected:(BOOL)aFlag
+{
+    alert();
+    if(aFlag)
+        [self setTextColor:[CPColor whiteColor]];
+    else(aFlag)
+        [self setTextColor:[CPColor blackColor]];
+}
 
 @end

@@ -17,13 +17,24 @@
 
 - (void)applicationDidFinishLaunching:(CPNotification)aNotification
 {
-    window = [[CPWindow alloc] initWithContentRect:CGRectMake(100,100,500,300) styleMask:CPResizableWindowMask],
+    window = [[CPWindow alloc] initWithContentRect:CGRectMake(100,100,500,300) styleMask:CPResizableWindowMask|CPMiniaturizableWindowMask|CPClosableWindowMask],
         contentView = [window contentView];
+        
+        var blah = [CPTextField labelWithTitle:@"HELLO WORLD!!!"];
+        [blah setFrame:CGRectMake(40,10, 200, 30)];
+        var blah2 = [[CPToolbar alloc] initWithIdentifier:@"asd"];
+        [window setToolbar:blah2];
+        [contentView addSubview:blah];
    	
     sheet = [[CPWindow alloc] initWithContentRect:CGRectMake(0,0,300,100) styleMask:CPDocModalWindowMask|CPResizableWindowMask];
  //   [sheet setMinSize:CGSizeMake(300,100)];
+ [sheet setShowsResizeIndicator:NO];
     
     var sheetContent = [sheet contentView];
+   
+    [sheet setBackgroundColor:[CPColor redColor]];
+    [sheetContent setBackgroundColor:[CPColor clearColor]];
+    // alert([sheet backgroundColor]);
         
     textField = [[CPTextField alloc] initWithFrame:CGRectMake(10,30,280,30)];
     [textField setEditable:YES];
