@@ -56,11 +56,7 @@ var CPTextFieldDOMInputElement = nil,
     CPTextFieldInputIsActive = NO,
     CPTextFieldCachedSelectStartFunction = nil,
     CPTextFieldCachedDragFunction = nil,
-    
-    CPTextFieldBlurFunction = nil,
-    CPTextFieldKeyUpFunction = nil,
-    CPTextFieldKeyPressFunction = nil,
-    CPTextFieldKeyDownFunction = nil;
+    CPTextFieldBlurFunction = nil;
     
 #endif
 
@@ -253,21 +249,6 @@ CPThemeStateEditable		= CPThemeState("editable");
             CPTextFieldDOMPasswordInputElement.style.outline = "none";
             CPTextFieldDOMPasswordInputElement.type = "password";
 
-           
-            
-            if (document.attachEvent)
-            {
-                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
-                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
-                CPTextFieldDOMPasswordInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
-            }
-            else
-            {
-                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
-                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
-                CPTextFieldDOMPasswordInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
-            }
-
             CPTextFieldDOMPasswordInputElement.onblur = CPTextFieldBlurFunction;
         }
         
@@ -290,19 +271,7 @@ CPThemeStateEditable		= CPThemeState("editable");
             CPTextFieldDOMMultilineInputElement.style.background = "transparent";
             CPTextFieldDOMMultilineInputElement.style.outline = "none";
 			
-			if (document.attachEvent)
-       		{
-       	    	CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyUp, CPTextFieldKeyUpFunction);
-         		CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyDown, CPTextFieldKeyDownFunction);
-            	CPTextFieldDOMMultilineInputElement.attachEvent("on" + CPDOMEventKeyPress, CPTextFieldKeyPressFunction);
-       		}
-        	else
-        	{
-            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyUp, CPTextFieldKeyUpFunction, NO);
-            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyDown, CPTextFieldKeyDownFunction, NO);
-            	CPTextFieldDOMMultilineInputElement.addEventListener(CPDOMEventKeyPress, CPTextFieldKeyPressFunction, NO);
-        	}
-			
+						
             CPTextFieldDOMMultilineInputElement.onblur = CPTextFieldBlurFunction;
         }
         
