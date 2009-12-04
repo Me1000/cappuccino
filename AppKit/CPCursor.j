@@ -123,11 +123,17 @@ var currentCursor = nil,
 
 + (CPCursor)resizeLeftRightCursor
 {
+    if(CPBrowserIsEngine(CPOperaBrowserEngine))
+        return [CPCursor cursorWithCSSString:@"move"];
+    
     return [CPCursor cursorWithCSSString:@"col-resize"]; // WebKit | FF | IE
 }
 
 + (CPCursor)resizeUpDownCursor
 {
+    if(CPBrowserIsEngine(CPOperaBrowserEngine))
+        return [CPCursor cursorWithCSSString:@"move"];
+        
     return [CPCursor cursorWithCSSString:@"row-resize"]; // WebKit | FF | IE
 }
 
