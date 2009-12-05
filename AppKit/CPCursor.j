@@ -31,8 +31,9 @@ var currentCursor = nil,
 
 - (id)initWithCSSString:(CPString)aString
 {
-    self = [super init];
-    _cssString = aString;    
+    if (self = [super init])
+        _cssString = aString;
+
     return self;
 }
 
@@ -224,6 +225,13 @@ var currentCursor = nil,
 {
     document.body.style.cursor = _cssString;
     currentCursor = self; 
+
+#if PLATFORM(DOM)
+    var platformWindows = [[CPPlatformWindow visiblePlatformWindows] allObjects];
+    for (var i = 0, count = [platformWindows count]; i < count; i++)
+        platformWindows[i]._DOMWindow.document.body.style.cursor = _cssString;
+#endif
+
 }
 
 - (void)push
@@ -247,8 +255,9 @@ var currentCursor = nil,
 
 - (id)initWithCoder:(CPCoder)coder
 {
-    self = [super init];
-    _cssString = [coder decodeObjectForKey:@"CPCursorNameKey"];
+    if (self = [super init])
+        _cssString = [coder decodeObjectForKey:@"CPCursorNameKey"];
+
     return self;
 }
 
