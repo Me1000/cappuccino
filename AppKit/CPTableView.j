@@ -1689,6 +1689,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 
 - (void)highlightSelectionInClipRect:(CGRect)aRect
 {
+    [[CPColor whiteColor] setStroke];
     // FIXME: This color thingy is terrible probably.
     if ([self selectionHighlightStyle] === CPTableViewSelectionHighlightStyleSourceList)
         [[CPColor selectionColorSourceView] setFill];
@@ -1728,7 +1729,11 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         return;
 
     CGContextBeginPath(context);
-
+    CGContextMoveToPoint(context, rowToStroke.origin.x, rowToStroke.origin.y + rowToStroke.size.height);
+	CGContextAddLineToPoint(context, rowToStroke.origin.x + rowToStroke.size.width, rowToStroke.origin.y + rowToStroke.size.height);
+	CGContextSetLineWidth(context, 1);
+	CGContextStrokePath(context);
+		
     while (count--)
         CGContextAddRect(context, CGRectIntersection(objj_msgSend(self, rectSelector, indexes[count]), aRect));
 
