@@ -154,6 +154,11 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     CPIndexSet  _selectedColumnIndexes;
     CPIndexSet  _selectedRowIndexes;
     CPInteger   _selectionAnchorRow;
+    CPIndexSet  _previouslySelectedRowIndexes;
+    CGPoint     _startTrackingPoint;
+    CPDate      _startTrackingTimestamp;
+    BOOL        _trackingPointMovedOutOfClickSlop;
+    CGPoint     _editingCellIndex;
 
     _CPTableDrawView _tableDrawView;
 }
@@ -1443,8 +1448,8 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
             tableColumn = _tableColumns[column],
             tableColumnUID = [tableColumn UID];
 
-    if (!_dataViewsForTableColumns[tableColumnUID])
-        _dataViewsForTableColumns[tableColumnUID] = [];
+        if (!_dataViewsForTableColumns[tableColumnUID])
+            _dataViewsForTableColumns[tableColumnUID] = [];
 
         var rowIndex = 0,
             rowsCount = rowArray.length;
@@ -1453,7 +1458,8 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         for (; rowIndex < rowsCount; ++rowIndex)
         {
             var row = rowArray[rowIndex],
-                dataView = [self _newDataViewForRow:row tableColumn:tableColumn];
+                dataView = [self _newDataViewForRow:row tableColumn:tableColumn],
+                isTextField = [dataView isKindOfClass:[CPTextField class]];
 
             [dataView setFrame:[self frameOfDataViewAtColumn:column row:row]];
             [dataView setObjectValue:[self _objectValueForTableColumn:tableColumn row:row]];
@@ -1470,8 +1476,34 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
                 [self addSubview:dataView];
 
             _dataViewsForTableColumns[tableColumnUID][row] = dataView;
+            
+            if (_editingCellIndex && _editingCellIndex.x === column && _editingCellIndex.y === row) {
+                _editingCellIndex = undefined;
+                
+                if (isTextField) {
+                    [dataView setEditable:YES];
+                    [dataView setSendsActionOnEndEditing:YES];
+                    [dataView setSelectable:YES];
+                    [dataView selectText:nil]; // Doesn't seem to actually work (yet?).
+                }
+                [dataView setTarget:self];
+                [dataView setAction:@selector(_commitDataViewObjectValue:)];
+                dataView.tableViewEditedColumnObj = tableColumn;
+                dataView.tableViewEditedRowIndex = row;
+            } else if (isTextField) {
+                [dataView setEditable:NO];
+                [dataView setSelectable:NO];
+            }
         }
     }
+}
+
+- (IBAction)_commitDataViewObjectValue:(CPTextView)sender
+{
+    [_dataSource tableView:self
+        setObjectValue:[sender objectValue]
+        forTableColumn:sender.tableViewEditedColumnObj
+        row:sender.tableViewEditedRowIndex];
 }
 
 - (CPView)_newDataViewForRow:(CPInteger)aRow tableColumn:(CPTableColumn)aTableColumn
@@ -1782,6 +1814,12 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         _selectionAnchorRow = row;
 
     _previouslySelectedRowIndexes = nil;
+    
+    if (_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_) {
+        _startTrackingPoint = aPoint;
+        _startTrackingTimestamp = new Date();
+        _trackingPointMovedOutOfClickSlop = NO;
+    }
 
     [self _updateSelectionWithMouseAtRow:row];
     
@@ -1795,14 +1833,56 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     var row = [self rowAtPoint:aPoint];
     [self _updateSelectionWithMouseAtRow:row];
     [self scrollRowToVisible:row];
+    [self _updateSelectionWithMouseAtRow:[self rowAtPoint:aPoint]];
+    
+    if ((_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_)
+        && !_trackingPointMovedOutOfClickSlop)
+    {
+        var CLICK_SPACE_DELTA = 5.0; // Stolen from AppKit/Platform/DOM/CPPlatformWindow+DOM.j
+        if (ABS(aPoint.x - _startTrackingPoint.x) > CLICK_SPACE_DELTA
+            || ABS(aPoint.y - _startTrackingPoint.y) > CLICK_SPACE_DELTA)
+        {
+            _trackingPointMovedOutOfClickSlop = YES;
+        }
+    }
 
     return YES;
 }
 
 - (void)stopTracking:(CGPoint)lastPoint at:(CGPoint)aPoint mouseIsUp:(BOOL)mouseIsUp
 {
+    var CLICK_TIME_DELTA = 1000,
+        columnIndex,
+        column,
+        rowIndex,
+        shouldEdit = YES;
+    
     if (![_previouslySelectedRowIndexes isEqualToIndexSet:_selectedRowIndexes])
         [self _noteSelectionDidChange];
+    
+    if (mouseIsUp
+        && (_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_)
+        && !_trackingPointMovedOutOfClickSlop
+        && (((new Date()).getTime() - _startTrackingTimestamp.getTime()) <= CLICK_TIME_DELTA))
+    {
+        columnIndex = [self columnAtPoint:lastPoint];
+        if (columnIndex !== -1) {
+            column = _tableColumns[columnIndex];
+            if ([column isEditable]) {
+                rowIndex = [self rowAtPoint:aPoint];
+                if (rowIndex !== -1) {
+                    if (_implementedDelegateMethods & CPTableViewDelegate_tableView_shouldEditTableColumn_row_)
+                        shouldEdit = [_delegate tableView:self shouldEditTableColumn:column row:rowIndex];
+                    if (shouldEdit) {
+                        _editingCellIndex = CGPointMake(columnIndex, rowIndex);
+                        [self reloadDataForRowIndexes:[CPIndexSet indexSetWithIndex:rowIndex]
+                            columnIndexes:[CPIndexSet indexSetWithIndex:columnIndex]];
+                    }
+                }
+            }
+        }
+        
+    }
 }
 
 - (void)_updateSelectionWithMouseAtRow:(CPInteger)aRow
