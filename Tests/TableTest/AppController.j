@@ -59,7 +59,7 @@ CPLogRegister(CPLogConsole);
         [column setWidth:200.0];
 
         [column setDataView:textDataView];
-
+         [column setEditable:YES];
         [tableView addTableColumn:column];
     }
 
@@ -131,7 +131,7 @@ CPLogRegister(CPLogConsole);
 
 - (void)tableViewSelectionDidChange:(id)blah
 {
-    console.log("chaged");
+    //console.log("chaged");
 }
 
 //- (CPIndexSet)tableView:(CPTableView)tableView selectionIndexesForProposedSelection:(CPIndexSet)proposedSelectionIndexes
@@ -140,8 +140,19 @@ CPLogRegister(CPLogConsole);
 //	return proposedSelectionIndexes;
 //}
 
-@end
 
+- (BOOL)tableView:(CPTableView)aTableView shouldEditTableColumn:(CPTableColumn)tableColumn row:(int)row
+{
+    return YES;
+}
+
+- (void)tableView:(CPTableView)aTableView setObjectValue:(id)aValue forTableColumn:(CPTableColumn)tableColumn row:(int)row
+{
+    
+}
+
+@end
+/*
 @implementation CPTableView (newstuff)
 - (void)FIXMESelectRow:(CGRect)aRect
 {
@@ -182,6 +193,6 @@ CPLogRegister(CPLogConsole);
         [self setTextColor:[CPColor whiteColor]];
     else(aFlag)
         [self setTextColor:[CPColor blackColor]];
-}
+}*/
 
 @end
