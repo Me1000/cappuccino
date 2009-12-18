@@ -58,7 +58,7 @@ CPLogRegister(CPLogConsole);
 
 //    [textDataView setBackgroundColor:[[CPColor redColor] colorWithAlphaComponent:0.5]];
 
-    for (var i = 1; i <= 10; i++)
+    for (var i = 1; i <= 2; i++)
     {
         var column = [[CPTableColumn alloc] initWithIdentifier:String(i)];
 
@@ -74,6 +74,8 @@ CPLogRegister(CPLogConsole);
     }
 
     //[tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
+
+    [tableView setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
 
     var scrollView = [[CPScrollView alloc] initWithFrame:[view bounds]];
 [tableView setRowHeight:32.0];
@@ -91,6 +93,8 @@ CPLogRegister(CPLogConsole);
     
     //[tableView scrollColumnToVisible:7];
     //[tableView scrollRowToVisible:100];
+    
+    //[tableView sizeLastColumnToFit];
 }
 
 - (int)numberOfRowsInTableView:(CPTableView)tableView
@@ -153,7 +157,7 @@ CPLogRegister(CPLogConsole);
 
 - (BOOL)tableView:(CPTableView)aTableView shouldEditTableColumn:(CPTableColumn)tableColumn row:(int)row
 {
-    return YES;
+    return NO;
 }
 
 - (void)tableView:(CPTableView)aTableView setObjectValue:(id)aValue forTableColumn:(CPTableColumn)tableColumn row:(int)row
@@ -162,6 +166,7 @@ CPLogRegister(CPLogConsole);
 }
 
 @end
+
 /*
 @implementation CPTableView (newstuff)
 - (void)FIXMESelectRow:(CGRect)aRect
