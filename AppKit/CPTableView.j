@@ -1801,7 +1801,8 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
             minY = _CGRectGetMinY(aRect),
             maxY = _CGRectGetMaxY(aRect);
 
-        for (; columnArrayIndex < columnArrayCount; ++columnArrayIndex)
+        //decrement count by one because the last column shouldn't draw it's grid line
+        for (; columnArrayIndex < columnArrayCount-1; ++columnArrayIndex)
         {
             var columnRect = [self rectOfColumn:columnsArray[columnArrayIndex]],
                 columnX = _CGRectGetMaxX(columnRect) - 0.5;
