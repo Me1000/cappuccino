@@ -634,11 +634,10 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         [_selectedRowIndexes addIndexes:rows];
     else
         _selectedRowIndexes = [rows copy];
-
-    [self _updateHighlightWithOldRows:previousSelectedIndexes newRows:_selectedRowIndexes];
-    [_tableDrawView display]; // FIXME: should be setNeedsDisplayInRect:enclosing rect of new (de)selected rows
-                              // but currently -drawRect: is not implemented here
+    
     [self _noteSelectionDidChange];
+    
+    [self setNeedsLayout];
 }
 
 - (void)_updateHighlightWithOldRows:(CPIndexSet)oldRows newRows:(CPIndexSet)newRows
@@ -720,7 +719,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     return _selectedColumnIndexes;
 }
 
-- (void)selectedRowIndexes
+- (CPIndexSet)selectedRowIndexes
 {
     return _selectedRowIndexes;
 }
@@ -2094,11 +2093,10 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
     if (!_previouslySelectedRowIndexes)
         _previouslySelectedRowIndexes = [_selectedRowIndexes copy];
-
-    [self selectRowIndexes:newSelection byExtendingSelection:NO];
-
+    
     [self _noteSelectionIsChanging];
     
+    [self selectRowIndexes:newSelection byExtendingSelection:NO];
 }
 
 - (void)_noteSelectionIsChanging
