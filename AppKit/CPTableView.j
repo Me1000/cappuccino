@@ -1866,14 +1866,18 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         && (((new Date()).getTime() - _startTrackingTimestamp.getTime()) <= CLICK_TIME_DELTA))
     {
         columnIndex = [self columnAtPoint:lastPoint];
-        if (columnIndex !== -1) {
+        if (columnIndex !== -1) 
+        {
             column = _tableColumns[columnIndex];
-            if ([column isEditable]) {
+            if ([column isEditable]) 
+            {
                 rowIndex = [self rowAtPoint:aPoint];
-                if (rowIndex !== -1) {
+                if (rowIndex !== -1) 
+                {
                     if (_implementedDelegateMethods & CPTableViewDelegate_tableView_shouldEditTableColumn_row_)
                         shouldEdit = [_delegate tableView:self shouldEditTableColumn:column row:rowIndex];
-                    if (shouldEdit) {
+                    if (shouldEdit) 
+                    {
                         _editingCellIndex = CGPointMake(columnIndex, rowIndex);
                         [self reloadDataForRowIndexes:[CPIndexSet indexSetWithIndex:rowIndex]
                             columnIndexes:[CPIndexSet indexSetWithIndex:columnIndex]];
@@ -1984,6 +1988,15 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 - (BOOL)acceptsFirstResponder
 {
     return YES;
+}
+
+- (void)mouseDown:(CPEvent)anEvent
+{
+    [super mouseDown:anEvent];
+    
+    if([anEvent clickCount] === 2 && _doubleAction)
+        [_target performSelector:_doubleAction];
+        
 }
 
 - (void)keyDown:(CPEvent)anEvent {
