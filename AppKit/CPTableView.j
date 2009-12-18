@@ -1831,6 +1831,11 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 - (BOOL)continueTracking:(CGPoint)lastPoint at:(CGPoint)aPoint
 {
     var row = [self rowAtPoint:aPoint];
+    
+    //check to make sure the row exists
+    if(row < 0)
+        return NO;
+    
     [self _updateSelectionWithMouseAtRow:row];
     [self scrollRowToVisible:row];
     [self _updateSelectionWithMouseAtRow:[self rowAtPoint:aPoint]];
