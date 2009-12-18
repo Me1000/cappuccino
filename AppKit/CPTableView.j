@@ -74,6 +74,13 @@ CPTableViewGridNone                    = 0;
 CPTableViewSolidVerticalGridLineMask   = 1 << 0;
 CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 
+CPTableViewNoColumnAutoresizing = 0,
+CPTableViewUniformColumnAutoresizingStyle = 1,
+CPTableViewSequentialColumnAutoresizingStyle = 2,
+CPTableViewReverseSequentialColumnAutoresizingStyle = 3,
+CPTableViewLastColumnOnlyAutoresizingStyle = 4,
+CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
+
 
 #define NUMBER_OF_COLUMNS() (_tableColumns.length)
 #define UPDATE_COLUMN_RANGES_IF_NECESSARY() if (_dirtyTableColumnRangeIndex !== CPNotFound) [self _recalculateTableColumnRanges];
@@ -163,6 +170,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     _CPTableDrawView _tableDrawView;
     
     SEL         _doubleAction;
+    unsigned    _columnAutoResizingStyle;
 }
 
 - (id)initWithFrame:(CGRect)aFrame
@@ -1029,6 +1037,116 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     * - columnAutoresizingStyle
     * - setColumnAutoresizingStyle:
 */
+
+- (void)resizeWithOldSuperviewSize:(CGSize)aSize
+{   
+    [super resizeWithOldSuperviewSize:aSize];
+
+    var mask = _columnAutoResizingStyle;
+    
+    if(mask === CPTableViewUniformColumnAutoresizingStyle)
+    {
+        //FIX ME: needs to respect proportion of the the columns set width...
+        var superview = [self superview];
+
+        if (!superview)
+            return;
+        
+        var superviewSize = [superview bounds].size;
+        
+        UPDATE_COLUMN_RANGES_IF_NECESSARY();
+        
+        var count = NUMBER_OF_COLUMNS();
+        
+        var visColumns = [[CPArray alloc] init];
+        
+        for(var i=0; i < count; i++)
+        {
+            if(![_tableColumns[i] isHidden])
+                [visColumns addObject:i];
+        }
+        
+        count = [visColumns count];
+        
+        //if there are rows
+        if (count > 0)
+        {   
+            //get total width // don't let it be smaller than 15
+            var newWidth = MAX(15.0, superviewSize.width / count);
+            
+            //loop through all the rows again
+            for(var i = 0; i < count; i++)
+            {   
+                var columnToResize = _tableColumns[visColumns[i]];
+                var newWidth = MAX([columnToResize minWidth], superviewSize.width / count);                
+                newWidth = (newWidth > [columnToResize maxWidth]) ? [columnToResize maxWidth] : newWidth;
+                
+                [columnToResize setWidth:FLOOR(newWidth)];
+            }      
+        }
+        
+        [self setNeedsLayout];
+    }
+    
+    if(mask === CPTableViewLastColumnOnlyAutoresizingStyle)
+    {
+        [self sizeLastColumnToFit];
+    }
+    
+    if(mask === CPTableViewFirstColumnOnlyAutoresizingStyle)
+    {
+        var superview = [self superview];
+
+        if (!superview)
+            return;
+        
+        var superviewSize = [superview bounds].size;
+        
+        UPDATE_COLUMN_RANGES_IF_NECESSARY();
+        
+        var count = NUMBER_OF_COLUMNS();
+        
+        var visColumns = [[CPArray alloc] init];
+        var totalWidth = 0;
+        
+        for(var i=0; i < count; i++)
+        {
+            if(![_tableColumns[i] isHidden])
+            {
+                [visColumns addObject:i];
+                totalWidth += [_tableColumns[i] width];
+            }
+        }
+        
+        count = [visColumns count];
+        
+        //if there are rows
+        if (count > 0)
+        {   
+            var columnToResize = _tableColumns[visColumns[0]];
+            var newWidth = superviewSize.width - totalWidth;// - [columnToResize width];
+            newWidth += [columnToResize width];
+            newWidth = (newWidth < [columnToResize minWidth]) ? [columnToResize minWidth] : newWidth;
+            newWidth = (newWidth > [columnToResize maxWidth]) ? [columnToResize maxWidth] : newWidth;
+            
+            [columnToResize setWidth:FLOOR(newWidth)];
+        }
+        
+        [self setNeedsLayout];
+    }
+    
+}
+
+- (void)setColumnAutoresizingStyle:(unsigned)style
+{
+    _columnAutoResizingStyle = style;
+}
+
+- (unsigned)columnAutoresizingStyle
+{
+    return _columnAutoResizingStyle;
+}
+
 - (void)sizeLastColumnToFit
 {
     var superview = [self superview];
@@ -1048,10 +1166,15 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     //if the last row exists
     if (count >= 0)
     {
+        var columnToResize = _tableColumns[count];
         var newSize = MAX(0.0, superviewSize.width - CGRectGetMinX([self rectOfColumn:count]));
         
-        if (newSize > 0 && [_tableColumns[count] width] < newSize)
-            [_tableColumns[count] setWidth:newSize];
+        if (newSize > 0)
+        {
+            newSize = (newSize < [columnToResize minWidth]) ? [columnToResize minWidth] : newSize;
+            newSize = (newSize > [columnToResize maxWidth]) ? [columnToResize maxWidth] : newSize;   
+            [columnToResize setWidth:newSize];
+        }
     }
     
     [self setNeedsLayout];
