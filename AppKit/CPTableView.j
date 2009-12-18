@@ -161,6 +161,8 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
     CGPoint     _editingCellIndex;
 
     _CPTableDrawView _tableDrawView;
+    
+    SEL         _doubleAction;
 }
 
 - (id)initWithFrame:(CGRect)aFrame
@@ -1040,11 +1042,18 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 
     var count = NUMBER_OF_COLUMNS();
 
+    //decrement the counter until we get to the last row that's not hidden
     while (count-- && [_tableColumns[count] isHidden]) ;
-
+    
+    //if the last row exists
     if (count >= 0)
-        [_tableColumns[count] setWidth:MAX(0.0, superviewSize.width - _CGRectGetMinX([self rectOfColumn:count]))];
-
+    {
+        var newSize = MAX(0.0, superviewSize.width - CGRectGetMinX([self rectOfColumn:count]));
+        
+        if (newSize > 0 && [_tableColumns[count] width] < newSize)
+            [_tableColumns[count] setWidth:newSize];
+    }
+    
     [self setNeedsLayout];
 }
 
@@ -1994,15 +2003,6 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 - (BOOL)acceptsFirstResponder
 {
     return YES;
-}
-
-- (void)mouseDown:(CPEvent)anEvent
-{
-    [super mouseDown:anEvent];
-    
-    if([anEvent clickCount] === 2 && _doubleAction)
-        [_target performSelector:_doubleAction];
-        
 }
 
 - (void)mouseDown:(CPEvent)anEvent
