@@ -1832,10 +1832,6 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 {
     var row = [self rowAtPoint:aPoint];
     
-    //check to make sure the row exists
-    if(row < 0)
-        return NO;
-    
     [self _updateSelectionWithMouseAtRow:row];
     [self scrollRowToVisible:row];
     [self _updateSelectionWithMouseAtRow:[self rowAtPoint:aPoint]];
@@ -1896,6 +1892,11 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 
 - (void)_updateSelectionWithMouseAtRow:(CPInteger)aRow
 {
+    
+    //check to make sure the row exists
+    if(aRow < 0)
+        return NO;
+    
     // If cmd/ctrl was held down XOR the old selection with the proposed selection
     if ([self mouseDownFlags] & (CPCommandKeyMask | CPControlKeyMask | CPAlternateKeyMask))
     {
