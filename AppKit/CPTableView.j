@@ -1682,7 +1682,7 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
 
         for (; columnArrayIndex < columnArrayCount; ++columnArrayIndex)
         {
-            var columnRect = [self rectOfColumn:columnArrayIndex],
+            var columnRect = [self rectOfColumn:columnsArray[columnArrayIndex]],
                 columnX = _CGRectGetMaxX(columnRect) - 0.5;
 
             CGContextMoveToPoint(context, columnX, minY);
