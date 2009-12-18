@@ -1801,11 +1801,11 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
             minY = _CGRectGetMinY(aRect),
             maxY = _CGRectGetMaxY(aRect);
 
-        //decrement count by one because the last column shouldn't draw it's grid line
-        for (; columnArrayIndex < columnArrayCount-1; ++columnArrayIndex)
+
+        for (; columnArrayIndex < columnArrayCount; ++columnArrayIndex)
         {
             var columnRect = [self rectOfColumn:columnsArray[columnArrayIndex]],
-                columnX = _CGRectGetMaxX(columnRect) - 0.5;
+                columnX = _CGRectGetMaxX(columnRect) + 0.5;
 
             CGContextMoveToPoint(context, columnX, minY);
             CGContextAddLineToPoint(context, columnX, maxY);
@@ -2132,7 +2132,8 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     [super mouseDown:anEvent];
     
     if([anEvent clickCount] === 2 && _doubleAction)
-        [_target performSelector:_doubleAction];
+        [self sendAction:_doubleAction to:_target]; 
+        //[_target performSelector:_doubleAction];
         
 }
 
