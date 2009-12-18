@@ -1038,7 +1038,7 @@ var _CPAppBootstrapperActions = nil;
 
 + (void)actions
 {
-    return [@selector(bootstrapPlatform), @selector(loadDefaultTheme), @selector(loadMainCibFile)];
+    return [@selector(bootstrapPlatform), @selector(loadDefaultTheme), @selector(loadMainCibFile), @selector(finishBootstrappingPlatform)];
 }
 
 + (void)performActions
@@ -1055,6 +1055,11 @@ var _CPAppBootstrapperActions = nil;
     }
 
     [CPApp run];
+}
+
++ (void)finishBootstrappingPlatform
+{
+    [CPPlatform finishBootstrap];
 }
 
 + (BOOL)bootstrapPlatform

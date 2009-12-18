@@ -43,8 +43,18 @@ CPLogRegister(CPLogConsole);
     iconImage = [[CPImage alloc] initWithContentsOfFile:"http://cappuccino.org/images/favicon.png" size:CGSizeMake(16,16)];
 
     var textDataView = [CPTextField new];
+//    [textDataView setFrameSize:CGSizeMake(200,32)];
+  //  [textDataView setValue:CGInsetMake(9.0, 7.0, 5.0, 8.0) forThemeAttribute:@"content-inset"];
+    //[textDataView setValue:CGInsetMake(9.0, 7.0, 5.0, 8.0) forThemeAttribute:@"content-inset"];
+    //[textDataView setValue:CGInsetMake(4.0, 4.0, 3.0, 4.0) forThemeAttribute:@"bezel-inset"];
+//    [textDataView setValue:CGInsetMake(2, 0, 0, 0) forThemeAttribute:@"focus-inset"];
+  //  [textDataView setValue:CGInsetMake(0, 0, 0, 0) forThemeAttribute:@"focus-inset" inState:CPThemeStateBezeled|CPThemeStateEditing];
+    
     [textDataView setValue:[CPColor whiteColor] forThemeAttribute:@"text-color" inState:CPThemeStateHighlighted];
-    [textDataView setValue:[CPFont boldSystemFontOfSize:12] forThemeAttribute:@"font" inState:CPThemeStateHighlighted];
+    [textDataView setValue:[CPFont systemFontOfSize:12] forThemeAttribute:@"font" inState:CPThemeStateHighlighted];
+
+    //[textDataView setValue:CGSizeMake(1,1) forThemeAttribute:@"text-shadow-offset"];
+	//[textDataView setValue:[CPColor blackColor] forThemeAttribute:@"text-shadow-color" inState:CPThemeStateHighlighted];
 
 //    [textDataView setBackgroundColor:[[CPColor redColor] colorWithAlphaComponent:0.5]];
 
@@ -59,23 +69,24 @@ CPLogRegister(CPLogConsole);
         [column setWidth:200.0];
 
         [column setDataView:textDataView];
-         [column setEditable:YES];
+        [column setEditable:YES];
         [tableView addTableColumn:column];
     }
 
     //[tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
 
     var scrollView = [[CPScrollView alloc] initWithFrame:[view bounds]];
-
+[tableView setRowHeight:32.0];
     [scrollView setDocumentView:tableView];
     [scrollView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
-
+    
     [view addSubview:scrollView];
 
     [scrollView setAutohidesScrollers:YES];
 
     [tableView setDelegate:self];
     [tableView setDataSource:self];
+    
     
     
     //[tableView scrollColumnToVisible:7];
@@ -94,13 +105,12 @@ CPLogRegister(CPLogConsole);
     else
         return String((row + 1) * [[tableColumn identifier] intValue]);
 }
-/*
+
 - (id)tableView:(CPTableView)tableView heightOfRow:(int)row
 {
-    //CPLog.info("heightOfRow:"+row);
-    return 20.0 + ROUND(row * 0.5);
+    return 50;
 }
-*/
+
 //- (void)tableViewSelectionIsChanging:(CPNotification)aNotification
 //{
 //	CPLog.debug(@"changing! %@", [aNotification description]);
