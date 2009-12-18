@@ -1033,10 +1033,6 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
     return _CGRectMake(tableColumnRange.location, _CGRectGetMinY(rectOfRow), tableColumnRange.length, _CGRectGetHeight(rectOfRow));
 }
-/*
-    * - columnAutoresizingStyle
-    * - setColumnAutoresizingStyle:
-*/
 
 - (void)resizeWithOldSuperviewSize:(CGSize)aSize
 {   
@@ -1047,6 +1043,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     if(mask === CPTableViewUniformColumnAutoresizingStyle)
     {
         //FIX ME: needs to respect proportion of the the columns set width...
+        // this can also get slow when there are many rows
         var superview = [self superview];
 
         if (!superview)
@@ -1139,6 +1136,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
 - (void)setColumnAutoresizingStyle:(unsigned)style
 {
+    //FIX ME: CPTableViewSequentialColumnAutoresizingStyle and CPTableViewReverseSequentialColumnAutoresizingStyle are not yet implemented
     _columnAutoResizingStyle = style;
 }
 
