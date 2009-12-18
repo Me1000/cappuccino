@@ -1999,6 +1999,15 @@ CPTableViewSolidHorizontalGridLineMask = 1 << 1;
         
 }
 
+- (void)mouseDown:(CPEvent)anEvent
+{
+    [super mouseDown:anEvent];
+    
+    if([anEvent clickCount] === 2 && _doubleAction)
+        [_target performSelector:_doubleAction];
+        
+}
+
 - (void)keyDown:(CPEvent)anEvent {
     [self interpretKeyEvents:anEvent];
 }
