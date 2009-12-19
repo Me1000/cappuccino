@@ -720,7 +720,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     return _selectedColumnIndexes;
 }
  
-- (void)selectedRowIndexes
+- (CPIndexSet)selectedRowIndexes
 {
     return _selectedRowIndexes;
 }
@@ -1628,7 +1628,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     }
 }
  
-- (IBAction)_commitDataViewObjectValue:(CPTextView)sender
+- (void)_commitDataViewObjectValue:(CPTextView)sender
 {
     [_dataSource tableView:self
         setObjectValue:[sender objectValue]
