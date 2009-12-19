@@ -1937,6 +1937,12 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 - (BOOL)startTrackingAt:(CGPoint)aPoint
 {
     var row = [self rowAtPoint:aPoint];
+    
+    //if the user clicks outside a row then deslect everything
+    if(row < 0)
+        [self selectRowIndexes:[CPIndexSet indexSet] byExtendingSelection:NO];
+ 
+    [self _noteSelectionIsChanging];
  
     if ([self mouseDownFlags] & CPShiftKeyMask)
         _selectionAnchorRow = (ABS([_selectedRowIndexes firstIndex] - row) < ABS([_selectedRowIndexes lastIndex] - row)) ?
@@ -2026,7 +2032,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     
     //check to make sure the row exists
     if(aRow < 0)
-        return NO;
+        return;
     
     // If cmd/ctrl was held down XOR the old selection with the proposed selection
     if ([self mouseDownFlags] & (CPCommandKeyMask | CPControlKeyMask | CPAlternateKeyMask))
