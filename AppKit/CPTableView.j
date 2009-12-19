@@ -1879,24 +1879,25 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
              minY = _CGRectGetMinY(rect) - 0.5,
              maxY = _CGRectGetMaxY(rect) - 0.5;
         
-        if (gridStyleMask & CPTableViewSolidVerticalGridLineMask)
+        //FIX ME: if there are vertical lines we need to make them white too...
+        /*if (gridStyleMask & CPTableViewSolidVerticalGridLineMask)
         {
             var exposedColumns = [self columnIndexesInRect:aRect],
                 columnIndexes = [],
-                exposedColumns = CPMakeRange(firstColumn, [exposedColumns lastIndex] - firstColumn + 1);
-                [_selectedColumnIndexes getIndexes:columnIndexes maxCount:-1 inIndexRange:exposedColumns],
-                columnCount = [columnIndexes count];
-            
+                exposedColumns2 = CPMakeRange([exposedColumns firstIndex], [exposedColumns lastIndex] - firstColumn + 1);
+                [exposedColumns getIndexes:columnIndexes maxCount:-1 inIndexRange:exposedColumns2],
+                columnCount = [exposedColumns count];
+
             for(var c = 0; c < columnCount - 1; c++)
             {
                 var colRect = [self rectOfColumn:columnIndexes[c]],
                     colX = _CGRectGetMaxX(rect) - 0.5;
-//                console.log("colX");
+                console.log("colX");
                 CGContextMoveToPoint(context, colX, minY);
                 CGContextAddLineToPoint(context, colX, maxY);
             }
             
-        }
+        }*/
         
          CGContextMoveToPoint(context, minX, maxY);
          CGContextAddLineToPoint(context, maxX, maxY);
