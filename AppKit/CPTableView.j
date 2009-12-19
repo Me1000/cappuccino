@@ -1675,8 +1675,9 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     var exposedRect = [self _exposedRect];
  
     [self drawBackgroundInClipRect:exposedRect];
-    [self highlightSelectionInClipRect:exposedRect];
     [self drawGridInClipRect:exposedRect];
+    [self highlightSelectionInClipRect:exposedRect];
+    
 }
  
 - (void)drawBackgroundInClipRect:(CGRect)aRect
@@ -1769,7 +1770,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
             // grab each row rect and add the top and bottom lines
             var rowRect = [self rectOfRow:row],
                 rowY = _CGRectGetMaxY(rowRect) - 0.5;
- 
+           
             CGContextMoveToPoint(context, minX, rowY);
             CGContextAddLineToPoint(context, maxX, rowY);
         }
@@ -1857,14 +1858,53 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
  
     if (!count)
         return;
- 
+    
+    var count2 = count;
+    
     CGContextBeginPath(context);
- 
+  
     while (count--)
         CGContextAddRect(context, CGRectIntersection(objj_msgSend(self, rectSelector, indexes[count]), aRect));
  
     CGContextClosePath(context);
     CGContextFillPath(context);
+    
+    CGContextBeginPath(context);
+    gridStyleMask = [self gridStyleMask];
+    for(var i=0; i < count2-1; i++)
+    {
+         var rect = [self rectOfRow:indexes[i]],
+             minX = _CGRectGetMinX(rect) - 0.5,
+             maxX = _CGRectGetMaxX(rect) - 0.5,
+             minY = _CGRectGetMinY(rect) - 0.5,
+             maxY = _CGRectGetMaxY(rect) - 0.5;
+        
+        if (gridStyleMask & CPTableViewSolidVerticalGridLineMask)
+        {
+            var exposedColumns = [self columnIndexesInRect:aRect],
+                columnIndexes = [],
+                exposedColumns = CPMakeRange(firstColumn, [exposedColumns lastIndex] - firstColumn + 1);
+                [_selectedColumnIndexes getIndexes:columnIndexes maxCount:-1 inIndexRange:exposedColumns],
+                columnCount = [columnIndexes count];
+            
+            for(var c = 0; c < columnCount - 1; c++)
+            {
+                var colRect = [self rectOfColumn:columnIndexes[c]],
+                    colX = _CGRectGetMaxX(rect) - 0.5;
+//                console.log("colX");
+                CGContextMoveToPoint(context, colX, minY);
+                CGContextAddLineToPoint(context, colX, maxY);
+            }
+            
+        }
+        
+         CGContextMoveToPoint(context, minX, maxY);
+         CGContextAddLineToPoint(context, maxX, maxY);
+    }
+    
+    CGContextClosePath(context);
+    CGContextSetStrokeColor(context, [CPColor whiteColor]);
+    CGContextStrokePath(context);
 }
  
 - (void)layoutSubviews
