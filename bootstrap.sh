@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+ 
 function prompt () {
     while true; do
         echo "Enter \"yes\" or \"no\": "
@@ -14,56 +14,37 @@ function prompt () {
         esac
     done
 }
-
+ 
 function which () {
     echo "$PATH" | tr ":" "\n" | while read line; do [ -f "$line/$1" ] && return 0; done
 }
-
+ 
 function path_instructions () {
     echo "Add \"$INSTALL_DIRECTORY/bin\" to your PATH environment variable in your shell configuration file (e.x. .profile, .bashrc, .bash_profile)."
     echo "For example:"
     echo "    export PATH=$INSTALL_DIRECTORY/bin:\$PATH"
 }
-
+ 
 if [ "--clone" = "$1" ]; then
     GITCLONE=1
 fi
-
+ 
 INSTALL_DIRECTORY="/usr/local/narwhal"
 TEMPZIP="/tmp/narwhal.zip"
-
+ 
 ORIGINAL_PATH="$PATH"
-
+ 
 if ! which "narwhal"; then
     echo "================================================================================"
     echo "Narwhal JavaScript platform is required. Install it automatically?"
     if prompt; then
-<<<<<<< HEAD
-        echo "Downloading Narwhal..."
-        curl -L -o "$TEMPZIP" "http://github.com/280north/narwhal/zipball/master"
-        echo "Installing Narwhal..."
-        unzip "$TEMPZIP" -d "$INSTALL_DIRECTORY"
-        rm "$TEMPZIP"
-        
-<<<<<<< HEAD
-        mv $INSTALL_DIRECTORY/tlrobinson-narwhal-*/* $INSTALL_DIRECTORY/.
-        rm -rf $INSTALL_DIRECTORY/tlrobinson-narwhal-*
-        echo "$PATH"
-        echo "ok here"
-        echo `which -s "narwhal"`
-        if ! which -s "narwhal"; then
-            echo "in the if!!!"
-=======
-        mv $INSTALL_DIRECTORY/280north-narwhal-*/* $INSTALL_DIRECTORY/.
-        rm -rf $INSTALL_DIRECTORY/280north-narwhal-*
-=======
         echo "================================================================================"
         echo "To use the default location, \"$INSTALL_DIRECTORY\", just hit enter/return, or enter another path:"
         read INSTALL_DIRECTORY_INPUT
         if [ "$INSTALL_DIRECTORY_INPUT" ]; then
             INSTALL_DIRECTORY="$INSTALL_DIRECTORY_INPUT"
         fi
-
+ 
         if [ "$GITCLONE" ]; then
             echo "Cloning Narwhal..."
             git clone git://github.com/280north/narwhal.git "$INSTALL_DIRECTORY"
@@ -73,42 +54,34 @@ if ! which "narwhal"; then
             echo "Installing Narwhal..."
             unzip "$TEMPZIP" -d "$INSTALL_DIRECTORY"
             rm "$TEMPZIP"
-
+ 
             mv $INSTALL_DIRECTORY/280north-narwhal-*/* $INSTALL_DIRECTORY/.
             rm -rf $INSTALL_DIRECTORY/280north-narwhal-*
         fi
->>>>>>> 72d01865ae695a460784a56e05517980ff562349
         
         if ! which "narwhal"; then
->>>>>>> bce83e45b596e5106267c0a46006ff6055ff4b81
             export PATH="$INSTALL_DIRECTORY/bin:$PATH"
-            echo "::::$PATH>>>"
         fi
-        echo "ok, and after:"
-        echo `which -s "narwhal"`
     else
         echo "Narwhal required, aborting installation. To install Narwhal manually follow the instructions at http://narwhaljs.org/"
         exit 1
     fi
 fi
-
-<<<<<<< HEAD
-=======
+ 
 if ! which "narwhal"; then
     echo "Error: problem installing Narwhal"
     exit 1
 fi
-
->>>>>>> bce83e45b596e5106267c0a46006ff6055ff4b81
+ 
 echo "Installing necessary dependencies..."
-
+ 
 if [ "$GITCLONE" ]; then
     tusk update
     tusk clone browserjs jake
 else
     tusk install browserjs jake
 fi
-
+ 
 if [ `uname` = "Darwin" ]; then
     echo "================================================================================"
     echo "Would you like to install the JavaScriptCore engine for Narwhal?"
@@ -132,7 +105,7 @@ if [ `uname` = "Darwin" ]; then
         # fi
     fi
 fi
-
+ 
 export PATH="$ORIGINAL_PATH"
 if ! which "narwhal"; then
     
@@ -147,7 +120,7 @@ if ! which "narwhal"; then
     elif [ -f "$HOME/.bashrc" ]; then
         SHELL_CONFIG="$HOME/.bashrc"
     fi
-
+ 
     EXPORT_PATH_STRING="export PATH=\"$INSTALL_DIRECTORY/bin:\$PATH\""
     
     echo "================================================================================"
@@ -166,5 +139,5 @@ if ! which "narwhal"; then
         path_instructions
     fi
 fi
-
+ 
 echo "Bootstrapping of Narwhal and other required tools is complete. You can now build Cappuccino."
