@@ -1980,7 +1980,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     var row = [self rowAtPoint:aPoint];
     
     //if the user clicks outside a row then deslect everything
-    if(row < 0)
+    if(row < 0 && _allowsEmptySelection)
         [self selectRowIndexes:[CPIndexSet indexSet] byExtendingSelection:NO];
  
     [self _noteSelectionIsChanging];
