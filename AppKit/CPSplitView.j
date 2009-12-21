@@ -210,7 +210,12 @@ var CPSplitViewHorizontalImage = nil,
     if (!_DOMDividerElements[_drawingDivider])
     {
         _DOMDividerElements[_drawingDivider] = document.createElement("div");
-        _DOMDividerElements[_drawingDivider].style.cursor = "move";
+        
+        if(_isVertical)
+            _DOMDividerElements[_drawingDivider].style.cursor = [[CPCursor resizeLeftRightCursor] _cssString];
+        else
+            _DOMDividerElements[_drawingDivider].style.cursor = [[CPCursor resizeUpDownCursor] _cssString];
+        
         _DOMDividerElements[_drawingDivider].style.position = "absolute";
         _DOMDividerElements[_drawingDivider].style.backgroundRepeat = "repeat";
 
