@@ -239,7 +239,7 @@ var CPToolbarConfigurationsByIdentifier = nil;
 {
     if (!_toolbarView)
     {
-        _toolbarView = [[_CPToolbarView alloc] initWithFrame:CPRectMake(0.0, 0.0, 1200.0, 59.0)];
+        _toolbarView = [[_CPToolbarView alloc] initWithFrame:CPRectMake(0.0, 0.0, (_window) ? CGRectGetWidth([_window frame]) :1200.0, 59.0)];
         
         [_toolbarView setToolbar:self];
         [_toolbarView setAutoresizingMask:CPViewWidthSizable];
