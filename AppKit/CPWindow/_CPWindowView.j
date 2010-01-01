@@ -19,15 +19,15 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
+ 
 @import "CPView.j"
 @import "CPImageView.j"
-
+ 
 #include "../CoreGraphics/CGGeometry.h"
-
-
+ 
+ 
 var _CPWindowViewResizeIndicatorImage = nil;
-
+ 
 @implementation _CPWindowView : CPView
 {
     unsigned    _styleMask;
@@ -37,14 +37,13 @@ var _CPWindowViewResizeIndicatorImage = nil;
     
     CPView      _toolbarView;
 //    BOOL        _isAnimatingToolbar;
-
     
     CGRect      _resizeFrame;
     CGPoint     _mouseDraggedPoint;
-
+ 
     CGRect      _cachedScreenFrame;
 }
-
+ 
 + (void)initialize
 {
     if (self != [_CPWindowView class])
@@ -52,27 +51,27 @@ var _CPWindowViewResizeIndicatorImage = nil;
     
     _CPWindowViewResizeIndicatorImage = [[CPImage alloc] initWithContentsOfFile:[[CPBundle bundleForClass:[CPWindow class]] pathForResource:@"_CPWindowView/_CPWindowViewResizeIndicator.png"] size:CGSizeMake(12.0, 12.0)];
 }
-
+ 
 + (CGRect)contentRectForFrameRect:(CGRect)aFrameRect
 {
     return CGRectMakeCopy(aFrameRect);
 }
-
+ 
 + (CGRect)frameRectForContentRect:(CGRect)aContentRect
 {
     return CGRectMakeCopy(aContentRect);
 }
-
+ 
 - (CGRect)contentRectForFrameRect:(CGRect)aFrameRect
 {
     return [[self class] contentRectForFrameRect:aFrameRect];
 }
-
+ 
 - (CGRect)frameRectForContentRect:(CGRect)aContentRect
 {
     return [[self class] frameRectForContentRect:aContentRect];
 }
-
+ 
 - (id)initWithFrame:(CPRect)aFrame styleMask:(unsigned)aStyleMask
 {
     self = [super initWithFrame:aFrame];
@@ -86,24 +85,24 @@ var _CPWindowViewResizeIndicatorImage = nil;
     
     return self;
 }
-
+ 
 - (void)setDocumentEdited:(BOOL)isEdited
 {
 }
-
+ 
 - (void)setTitle:(CPString)aTitle
 {
 }
-
+ 
 - (BOOL)acceptsFirstMouse:(CPEvent)anEvent
 {
     return YES;
 }
-
+ 
 - (void)mouseDown:(CPEvent)anEvent
 {
     var theWindow = [self window];
-
+ 
     if ((_styleMask & CPResizableWindowMask) && _resizeIndicator)
     {
         // FIXME: This should be better
@@ -119,7 +118,7 @@ var _CPWindowViewResizeIndicatorImage = nil;
     else
         [super mouseDown:anEvent];
 }
-
+ 
 - (void)trackResizeWithEvent:(CPEvent)anEvent
 {
     var location = [anEvent locationInWindow],
@@ -143,53 +142,48 @@ var _CPWindowViewResizeIndicatorImage = nil;
         
         if (theWindow._isSheet && theWindow._parentView && (theWindow._frame.size.width !== newSize.width))
     	[theWindow._parentView _setAttachedSheetFrameOrigin];
-		
+ 
 		[theWindow setFrameSize:newSize];
     }
     
     [CPApp setTarget:self selector:@selector(trackResizeWithEvent:) forNextEventMatchingMask:CPLeftMouseDraggedMask | CPLeftMouseUpMask untilDate:nil inMode:nil dequeue:YES];
 }
-
+ 
 - (CGPoint)_pointWithinScreenFrame:(CGPoint)aPoint
 {
     // FIXME: this is WRONG, all of this is WRONG
     if (![CPPlatform isBrowser])
         return aPoint;
-
+ 
     var visibleFrame = _cachedScreenFrame;
-
+ 
     if (!visibleFrame)
         visibleFrame = [[CPPlatformWindow primaryPlatformWindow] visibleFrame];
-
-    var minPointY = 0;
-    
-    if([CPMenu menuBarVisible])
-        minPointY = [[CPApp mainMenu] menuBarHeight];
-    
+ 
     var restrictedPoint = CGPointMake(0, 0);
-
+ 
     restrictedPoint.x = MIN(MAX(aPoint.x, -_frame.size.width + 4.0), CGRectGetMaxX(visibleFrame) - 4.0);
-    restrictedPoint.y = MIN(MAX(aPoint.y, minPointY), CGRectGetMaxY(visibleFrame) - 8.0);
-
+    restrictedPoint.y = MIN(MAX(aPoint.y, 0.0), CGRectGetMaxY(visibleFrame) - 8.0);
+ 
     return restrictedPoint;
 }
-
+ 
 - (void)trackMoveWithEvent:(CPEvent)anEvent
 {
     var type = [anEvent type];
-
+ 
     if (type === CPLeftMouseUp)
     {
         _cachedScreenFrame = nil;
         return;
     }
-
+ 
     else if (type === CPLeftMouseDown)
     {
         _mouseDraggedPoint = [[self window] convertBaseToGlobal:[anEvent locationInWindow]];
         _cachedScreenFrame = [[CPPlatformWindow primaryPlatformWindow] visibleFrame];
     }
-
+ 
     else if (type === CPLeftMouseDragged)
     {
         var theWindow = [self window],
@@ -197,15 +191,15 @@ var _CPWindowViewResizeIndicatorImage = nil;
             location = [theWindow convertBaseToGlobal:[anEvent locationInWindow]],
             origin = [self _pointWithinScreenFrame:CGPointMake(_CGRectGetMinX(frame) + (location.x - _mouseDraggedPoint.x), 
                                                                _CGRectGetMinY(frame) + (location.y - _mouseDraggedPoint.y))];
-
+ 
         [theWindow setFrameOrigin:origin];
-
+ 
         _mouseDraggedPoint = [self _pointWithinScreenFrame:location];
     }
     
     [CPApp setTarget:self selector:@selector(trackMoveWithEvent:) forNextEventMatchingMask:CPLeftMouseDraggedMask | CPLeftMouseUpMask untilDate:nil inMode:nil dequeue:YES];
 }
-
+ 
 - (void)setShowsResizeIndicator:(BOOL)shouldShowResizeIndicator
 {
     if (shouldShowResizeIndicator)
@@ -217,22 +211,22 @@ var _CPWindowViewResizeIndicatorImage = nil;
         
         [_resizeIndicator setImage:_CPWindowViewResizeIndicatorImage];
         [_resizeIndicator setAutoresizingMask:CPViewMinXMargin | CPViewMinYMargin];
-
+ 
         [self addSubview:_resizeIndicator];
     }
     else
     {
         [_resizeIndicator removeFromSuperview];
-
+ 
         _resizeIndicator = nil;
     }
 }
-
+ 
 - (CPImage)showsResizeIndicator
 {
     return _resizeIndicator !== nil;
 }
-
+ 
 - (void)setResizeIndicatorOffset:(CGSize)anOffset
 {
     if (CGSizeEqualToSize(_resizeIndicatorOffset, anOffset))
@@ -242,41 +236,41 @@ var _CPWindowViewResizeIndicatorImage = nil;
     
     if (!_resizeIndicator)
         return;
-
+ 
     var size = [_resizeIndicator frame].size,
         boundsSize = [self frame].size;
     
     [_resizeIndicator setFrameOrigin:CGPointMake(boundsSize.width - size.width - anOffset.width, boundsSize.height - size.height - anOffset.height)];
 }
-
+ 
 - (CGSize)resizeIndicatorOffset
 {
     return _resizeIndicatorOffset;
 }
-
+ 
 - (void)windowDidChangeDocumentEdited
 {
 }
-
+ 
 - (void)windowDidChangeDocumentSaving
 {
 }
-
+ 
 - (BOOL)showsToolbar
 {
     return YES;
 }
-
+ 
 - (CGSize)toolbarOffset
 {
     return CGSizeMakeZero();
 }
-
+ 
 - (CPColor)toolbarLabelColor
 {
     return [CPColor blackColor];
 }
-
+ 
 - (float)toolbarMaxY
 {
     if (!_toolbarView || [_toolbarView isHidden])
@@ -284,12 +278,12 @@ var _CPWindowViewResizeIndicatorImage = nil;
     
     return CGRectGetMaxY([_toolbarView frame]);
 }
-
+ 
 - (_CPToolbarView)toolbarView
 {
     return _toolbarView;
 }
-
+ 
 - (void)tile
 {
     var theWindow = [self window],
@@ -312,7 +306,7 @@ var _CPWindowViewResizeIndicatorImage = nil;
         [_resizeIndicator setFrameOrigin:CGPointMake(boundsSize.width - size.width - _resizeIndicatorOffset.width, boundsSize.height - size.height - _resizeIndicatorOffset.height)];
     }
 }
-
+ 
 - (void)noteToolbarChanged
 {
     var theWindow = [self window],
@@ -327,26 +321,26 @@ var _CPWindowViewResizeIndicatorImage = nil;
         {
             [toolbarView removeFromSuperview];
             [toolbarView FIXME_setIsHUD:_styleMask & CPHUDBackgroundWindowMask];
-
+ 
             [self addSubview:toolbarView];
         }
         
         _toolbarView = toolbarView;
     }
-
+ 
     [toolbarView setHidden:![self showsToolbar] || ![toolbar isVisible]];
-
+ 
     if (theWindow)
     {
         var contentRect = [self convertRect:[[theWindow contentView] frame] toView:nil];
-
+ 
         contentRect.origin = [theWindow convertBaseToGlobal:contentRect.origin];
-
+ 
         [self setAutoresizesSubviews:NO];
         [theWindow setFrame:[theWindow frameRectForContentRect:contentRect]];
         [self setAutoresizesSubviews:YES];
     }
-
+ 
     [self tile];
 }
 /*
@@ -354,19 +348,19 @@ var _CPWindowViewResizeIndicatorImage = nil;
 {
     _isAnimatingToolbar = isAnimatingToolbar;
 }
-
+ 
 - (BOOL)isAnimatingToolbar
 {
     return _isAnimatingToolbar;
 }
 */
-
+ 
 - (void)didAddSubview:(CPView)aView
 {
     if (!_resizeIndicator || aView === _resizeIndicator)
         return;
-
+ 
     [self addSubview:_resizeIndicator];
 }
-
+ 
 @end
