@@ -106,29 +106,29 @@
  * p:     undefined      80 undefined
  * P:     undefined      80 undefined
  */
-
+ 
 @import <Foundation/CPObject.j>
 @import <Foundation/CPRunLoop.j>
-
+ 
 @import "CPEvent.j"
 @import "CPCompatibility.j"
-
+ 
 @import "CPDOMWindowLayer.j"
-
+ 
 @import "CPPlatform.j"
 @import "CPPlatformWindow.j"
 @import "CPPlatformWindow+DOMKeys.j"
-
+ 
 #import "../../CoreGraphics/CGGeometry.h"
-
+ 
 // List of all open native windows
 var PlatformWindows = [CPSet set];
-
+ 
 // Define up here so compressor knows about em.
 var CPDOMEventGetClickCount,
     CPDOMEventStop,
     StopDOMEventPropagation;
-
+ 
 //right now we hard code q, w, r and t as keys to propogate
 //these aren't normal keycodes, they are with modifier key codes
 //might be mac only, we should investigate futher later.
@@ -138,149 +138,149 @@ var KeyCodesToPrevent = {},
         61: 187,  // =, equals
         59: 186   // ;, semicolon
     };
-
+ 
 KeyCodesToPrevent[CPKeyCodes.A] = YES;
-
+ 
 var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
-
+ 
 @implementation CPPlatformWindow (DOM)
-
+ 
 - (id)_init
 {
     self = [super init];
-
+ 
     if (self)
     {
         _DOMWindow = window;
         _contentRect = _CGRectMakeZero();
-
+ 
         _windowLevels = [];
         _windowLayers = [CPDictionary dictionary];
-
+ 
         [self registerDOMWindow];
         [self updateFromNativeContentRect];
-
+ 
         _charCodes = {};
     }
-
+ 
     return self;
 }
-
+ 
 - (CGRect)nativeContentRect
 {
     if (!_DOMWindow)
         return [self contentRect];
-
+ 
     if (_DOMWindow.cpFrame)
         return _DOMWindow.cpFrame();
-
+ 
     var contentRect = _CGRectMakeZero();
-
+ 
     if (window.screenTop)
         contentRect.origin = _CGPointMake(_DOMWindow.screenLeft, _DOMWindow.screenTop);
-
+ 
     else if (window.screenX)
         contentRect.origin = _CGPointMake(_DOMWindow.screenX, _DOMWindow.screenY);
-
+ 
     // Safari, Mozilla, Firefox, and Opera
     if (_DOMWindow.innerWidth)
         contentRect.size = _CGSizeMake(_DOMWindow.innerWidth, _DOMWindow.innerHeight);
-
+ 
     // Internet Explorer 6 in Strict Mode
     else if (document.documentElement && document.documentElement.clientWidth)
         contentRect.size = _CGSizeMake(_DOMWindow.document.documentElement.clientWidth, _DOMWindow.document.documentElement.clientHeight);
-
+ 
     // Internet Explorer X
     else
         contentRect.size = _CGSizeMake(_DOMWindow.document.body.clientWidth, _DOMWindow.document.body.clientHeight);
-
+ 
     return contentRect;
 }
-
+ 
 - (void)updateNativeContentRect
 {
     if (!_DOMWindow)
         return;
-
+ 
     if (typeof _DOMWindow["cpSetFrame"] === "function")
         return _DOMWindow.cpSetFrame([self contentRect]);
-
+ 
     var origin = [self contentRect].origin,
         nativeOrigin = [self nativeContentRect].origin;
-
+ 
     if (origin.x !== nativeOrigin.x || origin.y !== nativeOrigin.y)
     {
         _DOMWindow.moveBy(origin.x - nativeOrigin.x, origin.y - nativeOrigin.y);
     }
-
+ 
     var size = [self contentRect].size,
         nativeSize = [self nativeContentRect].size;
-
+ 
     if (size.width !== nativeSize.width || size.height !== nativeSize.height)
     {
         _DOMWindow.resizeBy(size.width - nativeSize.width, size.height - nativeSize.height);
     }
 }
-
+ 
 - (void)orderBack:(id)aSender
 {
     if (_DOMWindow)
         _DOMWindow.blur();
 }
-
+ 
 - (void)registerDOMWindow
 {
     var theDocument = _DOMWindow.document;
-
+ 
     _DOMBodyElement = theDocument.getElementsByTagName("body")[0];
-
+ 
     // FIXME: Always do this?
     if ([CPPlatform supportsDragAndDrop])
         _DOMBodyElement.style["-khtml-user-select"] = "none";
-
+ 
     _DOMBodyElement.webkitTouchCallout = "none";
-
+ 
     // This guy fixes an issue in Firefox where if you focus the URL field, we stop getting key events
     _DOMFocusElement = theDocument.createElement("input");
-
+ 
     _DOMFocusElement.style.position = "absolute";
     _DOMFocusElement.style.zIndex = "-1000";
     _DOMFocusElement.style.opacity = "0";
     _DOMFocusElement.style.filter = "alpha(opacity=0)";
     
     _DOMBodyElement.appendChild(_DOMFocusElement);
-
+ 
     // Create Native Pasteboard handler.
     _DOMPasteboardElement = theDocument.createElement("textarea");
-
+ 
     _DOMPasteboardElement.style.position = "absolute";
     _DOMPasteboardElement.style.top = "-10000px";
     _DOMPasteboardElement.style.zIndex = "999";
-
+ 
     _DOMBodyElement.appendChild(_DOMPasteboardElement);
-
+ 
     // Make sure the pastboard element is blurred.
     _DOMPasteboardElement.blur();
-
+ 
     [self _addLayers];
-
+ 
     var theClass = [self class],
-
+ 
         dragEventImplementation = class_getMethodImplementation(theClass, @selector(dragEvent:)),
         dragEventCallback = function (anEvent) { dragEventImplementation(self, nil, anEvent); },
-
+ 
         resizeEventSelector = @selector(resizeEvent:),
         resizeEventImplementation = class_getMethodImplementation(theClass, resizeEventSelector),
         resizeEventCallback = function (anEvent) { resizeEventImplementation(self, nil, anEvent); },
-
+ 
         copyEventSelector = @selector(copyEvent:),
         copyEventImplementation = class_getMethodImplementation(theClass, copyEventSelector),
         copyEventCallback = function (anEvent) {copyEventImplementation(self, nil, anEvent); },
-
+ 
         pasteEventSelector = @selector(pasteEvent:),
         pasteEventImplementation = class_getMethodImplementation(theClass, pasteEventSelector),
         pasteEventCallback = function (anEvent) {pasteEventImplementation(self, nil, anEvent); },
-
+ 
         keyEventSelector = @selector(keyEvent:),
         keyEventImplementation = class_getMethodImplementation(theClass, keyEventSelector),
         keyEventCallback = function (anEvent) { keyEventImplementation(self, nil, anEvent); },
@@ -296,8 +296,8 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         touchEventSelector = @selector(touchEvent:),
         touchEventImplementation = class_getMethodImplementation(theClass, touchEventSelector),
         touchEventCallback = function (anEvent) { touchEventImplementation(self, nil, anEvent); };
-
-
+ 
+ 
     if (theDocument.addEventListener)
     {
         if ([CPPlatform supportsDragAndDrop])
@@ -309,60 +309,60 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
             theDocument.addEventListener("dragleave", dragEventCallback, NO);
             theDocument.addEventListener("drop", dragEventCallback, NO);
         }
-
+ 
         theDocument.addEventListener("mouseup", mouseEventCallback, NO);
         theDocument.addEventListener("mousedown", mouseEventCallback, NO);
         theDocument.addEventListener("mousemove", mouseEventCallback, NO);
-
+ 
         theDocument.addEventListener("beforecopy", copyEventCallback, NO);
         theDocument.addEventListener("beforecut", copyEventCallback, NO);
         theDocument.addEventListener("beforepaste", pasteEventCallback, NO);
-
+ 
         theDocument.addEventListener("keyup", keyEventCallback, NO);
         theDocument.addEventListener("keydown", keyEventCallback, NO);
         theDocument.addEventListener("keypress", keyEventCallback, NO);
-
+ 
         theDocument.addEventListener("touchstart", touchEventCallback, NO);
         theDocument.addEventListener("touchend", touchEventCallback, NO);
         theDocument.addEventListener("touchmove", touchEventCallback, NO);
         theDocument.addEventListener("touchcancel", touchEventCallback, NO);
-
+ 
         _DOMWindow.addEventListener("DOMMouseScroll", scrollEventCallback, NO);
         _DOMWindow.addEventListener("mousewheel", scrollEventCallback, NO);
-
+ 
         _DOMWindow.addEventListener("resize", resizeEventCallback, NO);        
-
+ 
         _DOMWindow.addEventListener("unload", function()
         {
             [self updateFromNativeContentRect];
             [self _removeLayers];
-
+ 
             theDocument.removeEventListener("mouseup", mouseEventCallback, NO);
             theDocument.removeEventListener("mousedown", mouseEventCallback, NO);
             theDocument.removeEventListener("mousemove", mouseEventCallback, NO);
-
+ 
             theDocument.removeEventListener("keyup", keyEventCallback, NO);
             theDocument.removeEventListener("keydown", keyEventCallback, NO);
             theDocument.removeEventListener("keypress", keyEventCallback, NO);
-
+ 
             theDocument.removeEventListener("beforecopy", copyEventCallback, NO);
             theDocument.removeEventListener("beforecut", copyEventCallback, NO);
             theDocument.removeEventListener("beforepaste", pasteEventCallback, NO);
-
+ 
             theDocument.removeEventListener("touchstart", touchEventCallback, NO);
             theDocument.removeEventListener("touchend", touchEventCallback, NO);
             theDocument.removeEventListener("touchmove", touchEventCallback, NO);
-
+ 
             _DOMWindow.removeEventListener("resize", resizeEventCallback, NO);
-
+ 
             //FIXME: does firefox really need a different value?
             _DOMWindow.removeEventListener("DOMMouseScroll", scrollEventCallback, NO);
             _DOMWindow.removeEventListener("mousewheel", scrollEventCallback, NO);
-
+ 
             //_DOMWindow.removeEventListener("beforeunload", this, NO);
-
+ 
             [PlatformWindows removeObject:self];
-
+ 
             self._DOMWindow = nil;
         }, NO);
     }
@@ -384,56 +384,56 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         
         theDocument.body.ondrag = function () { return NO; };
         theDocument.body.onselectstart = function () { return _DOMWindow.event.srcElement === _DOMPasteboardElement; };
-
+ 
         _DOMWindow.attachEvent("onbeforeunload", function()
         {
             [self updateFromNativeContentRect];
             [self _removeLayers];
-
+ 
             theDocument.detachEvent("onmouseup", mouseEventCallback);
             theDocument.detachEvent("onmousedown", mouseEventCallback);
             theDocument.detachEvent("onmousemove", mouseEventCallback);
             theDocument.detachEvent("ondblclick", mouseEventCallback);
-
+ 
             theDocument.detachEvent("onkeyup", keyEventCallback);
             theDocument.detachEvent("onkeydown", keyEventCallback);
             theDocument.detachEvent("onkeypress", keyEventCallback);
-
+ 
             _DOMWindow.detachEvent("onresize", resizeEventCallback);
-
+ 
             _DOMWindow.onmousewheel = NULL;
             theDocument.onmousewheel = NULL;
-
+ 
             theDocument.body.ondrag = NULL;
             theDocument.body.onselectstart = NULL;
-
+ 
             //_DOMWindow.removeEvent("beforeunload", this);
-
+ 
             [PlatformWindows removeObject:self];
-
+ 
             self._DOMWindow = nil;
         }, NO);
     }
 }
-
+ 
 + (CPSet)visiblePlatformWindows
 {
     return PlatformWindows;
 }
-
+ 
 - (void)orderFront:(id)aSender
 {
     if (_DOMWindow)
         return _DOMWindow.focus();
-
+ 
     _DOMWindow = window.open("", "_blank", "menubar=no,location=no,resizable=yes,scrollbars=no,status=no,left=" + _CGRectGetMinX(_contentRect) + ",top=" + _CGRectGetMinY(_contentRect) + ",width=" + _CGRectGetWidth(_contentRect) + ",height=" + _CGRectGetHeight(_contentRect));
-
+ 
     [PlatformWindows addObject:self];
-
+ 
     // FIXME: cpSetFrame?
     _DOMWindow.document.write("<html><head></head><body style = 'background-color:transparent;'></body></html>");
     _DOMWindow.document.close();
-
+ 
     if (![CPPlatform isBrowser])
     {
         _DOMWindow.cpWindowNumber = [self._only windowNumber];
@@ -442,85 +442,85 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         _DOMWindow.cpSetHasShadow(_hasShadow);
         _DOMWindow.cpSetShadowStyle(_shadowStyle);
     }
-
+ 
     _DOMWindow.document.body.style.cursor = [[CPCursor currentCursor] _cssString];
-
+ 
     [self registerDOMWindow];
 }
-
+ 
 - (void)orderOut:(id)aSender
 {
     if (!_DOMWindow)
         return;
-
+ 
     _DOMWindow.close();
 }
-
+ 
 - (void)dragEvent:(DOMEvent)aDOMEvent
 {
     var type = aDOMEvent.type,
         dragServer = [CPDragServer sharedDragServer],
         location = _CGPointMake(aDOMEvent.clientX, aDOMEvent.clientY),
         pasteboard = [_CPDOMDataTransferPasteboard DOMDataTransferPasteboard];
-
+ 
     [pasteboard _setDataTransfer:aDOMEvent.dataTransfer];
-
+ 
     if (aDOMEvent.type === "dragstart")
     {
         [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
-
+ 
         [pasteboard _setPasteboard:[dragServer draggingPasteboard]];
-
+ 
         var draggedWindow = [dragServer draggedWindow],
             draggedWindowFrame = [draggedWindow frame],
             DOMDragElement = draggedWindow._DOMElement;
-
+ 
         DOMDragElement.style.left = -_CGRectGetWidth(draggedWindowFrame) + "px";
         DOMDragElement.style.top = -_CGRectGetHeight(draggedWindowFrame) + "px";
-
+ 
         document.getElementsByTagName("body")[0].appendChild(DOMDragElement);
-
+ 
         var draggingOffset = [dragServer draggingOffset];
-
+ 
         aDOMEvent.dataTransfer.setDragImage(DOMDragElement, draggingOffset.width, draggingOffset.height);
-
+ 
         [dragServer draggingStartedInPlatformWindow:self globalLocation:[CPPlatform isBrowser] ? location : _CGPointMake(aDOMEvent.screenX, aDOMEvent.screenY)];
     }
-
+ 
     else if (type === "drag")
     {
         var y = aDOMEvent.screenY;
-
+ 
         if (CPFeatureIsCompatible(CPHTML5DragAndDropSourceYOffBy1))
             y -= 1;
-
+ 
         [dragServer draggingSourceUpdatedWithGlobalLocation:[CPPlatform isBrowser] ? location : _CGPointMake(aDOMEvent.screenX, y)];
     }
-
+ 
     else if (type === "dragover" || type === "dragleave")
     {
         if (aDOMEvent.preventDefault)
             aDOMEvent.preventDefault();
-
+ 
         var dropEffect = "none",
             dragOperation = [dragServer draggingUpdatedInPlatformWindow:self location:location];
-
+ 
         if (dragOperation === CPDragOperationMove || dragOperation === CPDragOperationGeneric || dragOperation === CPDragOperationPrivate)
             dropEffect = "move";
-
+ 
         else if (dragOperation === CPDragOperationCopy)
             dropEffect = "copy";
-
+ 
         else if (dragOperation === CPDragOperationLink)
             dropEffect = "link";
-
+ 
         aDOMEvent.dataTransfer.dropEffect = dropEffect;
     }
-
+ 
     else if (type === "dragend")
     {
         var dropEffect = aDOMEvent.dataTransfer.dropEffect;
-
+ 
         if (dropEffect === "move")
             dragOperation = CPDragOperationMove;
         else if (dropEffect === "copy")
@@ -529,25 +529,25 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
             dragOperation = CPDragOperationLink;
         else
             dragOperation = CPDragOperationNone;
-
+ 
         [dragServer draggingEndedInPlatformWindow:self globalLocation:[CPPlatform isBrowser] ? location : _CGPointMake(aDOMEvent.screenX, aDOMEvent.screenY) operation:dragOperation];
     }
-
+ 
     else //if (type === "drop")
     {
         [dragServer performDragOperationInPlatformWindow:self];
-
+ 
         // W3C Model
         if (aDOMEvent.preventDefault)
             aDOMEvent.preventDefault();
-
+ 
         if (aDOMEvent.stopPropagation)
             aDOMEvent.stopPropagation();
     }
-
+ 
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
-
+ 
 - (void)keyEvent:(DOMEvent)aDOMEvent
 {
     var event,
@@ -558,16 +558,16 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                         (aDOMEvent.ctrlKey ? CPControlKeyMask : 0) | 
                         (aDOMEvent.altKey ? CPAlternateKeyMask : 0) | 
                         (aDOMEvent.metaKey ? CPCommandKeyMask : 0);
-
+ 
     //We want to stop propagation if this is a command key AND this character or keycode has been added to our blacklist    
     StopDOMEventPropagation = !!(!(modifierFlags & (CPControlKeyMask | CPCommandKeyMask)) ||
                               CharacterKeysToPrevent[String.fromCharCode(aDOMEvent.keyCode || aDOMEvent.charCode).toLowerCase()] ||
                               KeyCodesToPrevent[aDOMEvent.keyCode]);
-
+ 
     var isNativePasteEvent = NO,
         isNativeCopyOrCutEvent = NO,
         overrideCharacters = nil;
-
+ 
     switch (aDOMEvent.type)
     {
         case "keydown":     // Grab and store the keycode now since it is correct and consistent at this point.
@@ -575,22 +575,22 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                                 _keyCode = MozKeyCodeToKeyCodeMap[aDOMEvent.keyCode];
                             else
                                 _keyCode = aDOMEvent.keyCode;
-
+ 
                             var characters = String.fromCharCode(_keyCode).toLowerCase();
                             overrideCharacters = (modifierFlags & CPShiftKeyMask || _capsLockActive) ? characters.toUpperCase() : characters;
-
+ 
                             // check for caps lock state
                             if (_keyCode === CPKeyCodes.CAPS_LOCK)
                                 _capsLockActive = YES;
-
+ 
                             if (modifierFlags & (CPControlKeyMask | CPCommandKeyMask))
                             {
                                 //we are simply going to skip all keypress events that use cmd/ctrl key
                                 //this lets us be consistent in all browsers and send on the keydown
                                 //which means we can cancel the event early enough, but only if sendEvent needs to
-
+ 
                                 var eligibleForCopyPaste = [self _validateCopyCutOrPasteEvent:aDOMEvent flags:modifierFlags];
-
+ 
                                 // If this could be a native PASTE event, then we need to further examine it before 
                                 // sending a CPEvent.  Select our element to see if anything gets pasted in it.
                                 if (characters === "v" && eligibleForCopyPaste)
@@ -600,16 +600,16 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                                         _DOMPasteboardElement.select();
                                         _DOMPasteboardElement.value = "";
                                     }
-
+ 
                                     isNativePasteEvent = YES;
                                 }
-
+ 
                                 // However, of this could be a native COPY event, we need to let the normal event-process take place so it 
                                 // can capture our internal Cappuccino pasteboard.
                                 else if ((characters == "c" || characters == "x") && eligibleForCopyPaste)
                                 {
                                     isNativeCopyOrCutEvent = YES;
-
+ 
                                     if (_ignoreNativeCopyOrCutEvent)
                                         break;
                                 }
@@ -632,31 +632,31 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                             // because we forced the event to be sent on the keydown 
                             if (aDOMEvent.type === "keypress" && (modifierFlags & (CPControlKeyMask | CPCommandKeyMask)))
                                 break;
-
+ 
                             var keyCode = _keyCode,
                                 charCode = aDOMEvent.keyCode || aDOMEvent.charCode,
                                 isARepeat = (_charCodes[keyCode] != nil);
-
+ 
                             _lastKey = keyCode;
                             _charCodes[keyCode] = charCode;
-
+ 
                             var characters = overrideCharacters || String.fromCharCode(charCode),
                                 charactersIgnoringModifiers = characters.toLowerCase();
-
+ 
                             // Safari won't send proper capitalization during cmd-key events
                             if (!overrideCharacters && (modifierFlags & CPCommandKeyMask) && ((modifierFlags & CPShiftKeyMask) || _capsLockActive))
                                 characters = characters.toUpperCase();
-
+ 
                             event = [CPEvent keyEventWithType:CPKeyDown location:location modifierFlags:modifierFlags
                                         timestamp:timestamp windowNumber:windowNumber context:nil
                                         characters:characters charactersIgnoringModifiers:charactersIgnoringModifiers isARepeat:isARepeat keyCode:keyCode];
-
+ 
                             if (isNativePasteEvent)
                             {
                                 _pasteboardKeyDownEvent = event;
                                 window.setNativeTimeout(function () { [self _checkPasteboardElement] }, 0);
                             }
-
+ 
                             break;
         
         case "keyup":       var keyCode = aDOMEvent.keyCode,
@@ -667,11 +667,11 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                             _charCodes[keyCode] = nil;
                             _ignoreNativeCopyOrCutEvent = NO;
                             _ignoreNativePastePreparation = NO;
-
+ 
                             // check for caps lock state
                             if (keyCode === CPKeyCodes.CAPS_LOCK)
                                 _capsLockActive = NO;
-
+ 
                             var characters = String.fromCharCode(charCode),
                                 charactersIgnoringModifiers = characters.toLowerCase();
                                 
@@ -683,26 +683,26 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                                         characters:characters charactersIgnoringModifiers:charactersIgnoringModifiers isARepeat:NO keyCode:keyCode];
                             break;
     }
-
+ 
     if (event && !isNativePasteEvent)
     {
         event._DOMEvent = aDOMEvent;
-
+ 
         [CPApp sendEvent:event];
-
+ 
         if (isNativeCopyOrCutEvent)
         {
             // If this is a native copy event, then check if the pasteboard has anything in it.
             [self _primePasteboardElement];
         }
     }
-
+ 
     if (StopDOMEventPropagation)
         CPDOMEventStop(aDOMEvent, self);
         
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
-
+ 
 - (void)copyEvent:(DOMEvent)aDOMEvent
 {
     if ([self _validateCopyCutOrPasteEvent:aDOMEvent flags:CPPlatformActionKeyMask] && !_ignoreNativeCopyOrCutEvent)
@@ -714,24 +714,24 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
             timestamp = aDOMEvent.timeStamp ? aDOMEvent.timeStamp : new Date(),
             windowNumber = [[CPApp keyWindow] windowNumber],
             modifierFlags = CPPlatformActionKeyMask;
-
+ 
         event = [CPEvent keyEventWithType:CPKeyDown location:location modifierFlags:modifierFlags
                     timestamp:timestamp windowNumber:windowNumber context:nil
                     characters:characters charactersIgnoringModifiers:characters isARepeat:NO keyCode:keyCode];
-
+ 
         event._DOMEvent = aDOMEvent;
         [CPApp sendEvent:event];
-
+ 
         [self _primePasteboardElement];
-
+ 
         //then we have to IGNORE the real keyboard event to prevent a double copy
         //safari also sends the beforecopy event twice, so we additionally check here and prevent two events
         _ignoreNativeCopyOrCutEvent = YES;
     }
-
+ 
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
-
+ 
 - (void)pasteEvent:(DOMEvent)aDOMEvent
 {
     if ([self _validateCopyCutOrPasteEvent:aDOMEvent flags:CPPlatformActionKeyMask])
@@ -741,10 +741,10 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         _DOMPasteboardElement.value = "";
         _ignoreNativePastePreparation = YES;
     }
-
+ 
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
-
+ 
 - (void)_validateCopyCutOrPasteEvent:(DOMEvent)aDOMEvent flags:(unsigned)modifierFlags
 {
     return (
@@ -754,62 +754,62 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
            ) &&
             (modifierFlags & CPPlatformActionKeyMask);
 }
-
+ 
 - (void)_primePasteboardElement
 {
     var pasteboard = [CPPasteboard generalPasteboard],
         types = [pasteboard types];
-
+ 
     if (types.length)
     {
         if ([types indexOfObjectIdenticalTo:CPStringPboardType] != CPNotFound)
             _DOMPasteboardElement.value = [pasteboard stringForType:CPStringPboardType];
         else
             _DOMPasteboardElement.value = [pasteboard _generateStateUID];
-
+ 
         _DOMPasteboardElement.focus();
         _DOMPasteboardElement.select();
-
+ 
         window.setNativeTimeout(function() { [self _clearPasteboardElement]; }, 0);
     }
 }
-
-
+ 
+ 
 - (void)_checkPasteboardElement
 {
     var value = _DOMPasteboardElement.value;
-
+ 
     if ([value length])
     {
         var pasteboard = [CPPasteboard generalPasteboard];
-
+ 
         if ([pasteboard _stateUID] != value)
         {
             [pasteboard declareTypes:[CPStringPboardType] owner:self];
             [pasteboard setString:value forType:CPStringPboardType];
         }
     }
-
+ 
     [self _clearPasteboardElement];
-
+ 
     [CPApp sendEvent:_pasteboardKeyDownEvent];
-
+ 
     _pasteboardKeyDownEvent = nil;
-
+ 
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
-
+ 
 - (void)_clearPasteboardElement
 {
     _DOMPasteboardElement.value = "";
     _DOMPasteboardElement.blur();
 }
-
+ 
 - (void)scrollEvent:(DOMEvent)aDOMEvent
 {
     if(!aDOMEvent)
         aDOMEvent = window.event;
-
+ 
     if (CPFeatureIsCompatible(CPJavaScriptMouseWheelValues_8_15))
     {
         var x = 0.0,
@@ -818,7 +818,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         
         while (element.nodeType !== 1)
             element = element.parentNode;
-
+ 
         if (element.offsetParent)
         {
             do
@@ -844,16 +844,16 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                         (aDOMEvent.metaKey ? CPCommandKeyMask : 0);
           
     StopDOMEventPropagation = YES;
-
+ 
     var theWindow = [self hitTest:location];
-
+ 
     if (!theWindow)
         return;
-
+ 
     var windowNumber = [theWindow windowNumber];
-
+ 
     location = [theWindow convertBridgeToBase:location];
-
+ 
     if(typeof aDOMEvent.wheelDeltaX != "undefined")
     {
         deltaX = aDOMEvent.wheelDeltaX / 120.0;
@@ -868,7 +868,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     
     else
         return;        
-
+ 
     if(!CPFeatureIsCompatible(CPJavaScriptNegativeMouseWheelValues))
     {
         deltaX = -deltaX;
@@ -889,37 +889,37 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
-
+ 
 - (void)resizeEvent:(DOMEvent)aDOMEvent
 {
     // FIXME: This is not the right way to do this.
     // We should pay attention to mouse down and mouse up in conjunction with this.
     //window.liveResize = YES;
-
+ 
     [CPApp._activeMenu cancelTracking];
-
+ 
     var oldSize = [self contentRect].size;
-
+ 
     [self updateFromNativeContentRect];
-
+ 
     var levels = _windowLevels,
         layers = _windowLayers,
         levelCount = levels.length;
-
+ 
     while (levelCount--)
     {
         var windows = [layers objectForKey:levels[levelCount]]._windows,
             windowCount = windows.length;
-
+ 
         while (windowCount--)
             [windows[windowCount] resizeWithOldPlatformWindowSize:oldSize];
     }
-
+ 
     //window.liveResize = NO;
-
+ 
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
-
+ 
 - (void)touchEvent:(DOMEvent)aDOMEvent
 {
     if (aDOMEvent.touches && (aDOMEvent.touches.length == 1 || (aDOMEvent.touches.length == 0 && aDOMEvent.changedTouches.length == 1)))
@@ -937,7 +937,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
             case CPDOMEventTouchCancel: newEvent.type = CPDOMEventMouseUp;
                                         break;
         }
-
+ 
         var touch = aDOMEvent.touches.length ? aDOMEvent.touches[0] : aDOMEvent.changedTouches[0];
         
         newEvent.clientX = touch.clientX;
@@ -965,25 +965,25 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     }
     // handle touch cases specifically
 }
-
+ 
 - (void)mouseEvent:(DOMEvent)aDOMEvent
 {
     var type = _overriddenEventType || aDOMEvent.type;
-
+ 
     // IE's event order is down, up, up, dblclick, so we have create these events artificially.
     if (type === @"dblclick")
     {
         _overriddenEventType = CPDOMEventMouseDown;
         [self mouseEvent:aDOMEvent];
-
+ 
         _overriddenEventType = CPDOMEventMouseUp;
         [self mouseEvent:aDOMEvent];
-
+ 
         _overriddenEventType = nil;
-
+ 
         return;         
     }
-
+ 
     var event,
         location = _CGPointMake(aDOMEvent.clientX, aDOMEvent.clientY),
         timestamp = aDOMEvent.timeStamp ? aDOMEvent.timeStamp : new Date(),
@@ -993,25 +993,25 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                         (aDOMEvent.ctrlKey ? CPControlKeyMask : 0) | 
                         (aDOMEvent.altKey ? CPAlternateKeyMask : 0) | 
                         (aDOMEvent.metaKey ? CPCommandKeyMask : 0);
-
+ 
     StopDOMEventPropagation = YES;
-
+ 
     if (_mouseDownWindow)
         windowNumber = [_mouseDownWindow windowNumber];
-
+ 
     else
     {
         var theWindow = [self hitTest:location];
-
+ 
         if ((aDOMEvent.type === CPDOMEventMouseDown) && theWindow)
             _mouseDownWindow = theWindow;
-
+ 
         windowNumber = [theWindow windowNumber];
     }
-
+ 
     if (windowNumber)
         location = [CPApp._windows[windowNumber] convertPlatformWindowToBase:location];
-
+ 
     if (type === "mouseup")
     {
         if(_mouseIsDown)
@@ -1022,7 +1022,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
             _lastMouseUp = event;
             _mouseDownWindow = nil;
         }
-
+ 
         if(_DOMEventMode)
         {
             _DOMEventMode = NO;
@@ -1039,19 +1039,19 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                 _DOMBodyElement.setAttribute("draggable", "false");
                 _DOMBodyElement.style["-khtml-user-drag"] = "none";
             }
-
+ 
             _DOMEventMode = YES;
             _mouseIsDown = YES;
-
+ 
             //fake a down and up event so that event tracking mode will work correctly
             [CPApp sendEvent:[CPEvent mouseEventWithType:CPLeftMouseDown location:location modifierFlags:modifierFlags
                     timestamp:timestamp windowNumber:windowNumber context:nil eventNumber:-1 
                     clickCount:CPDOMEventGetClickCount(_lastMouseDown, timestamp, location) pressure:0]];
-
+ 
             [CPApp sendEvent:[CPEvent mouseEventWithType:CPLeftMouseUp location:location modifierFlags:modifierFlags
                     timestamp:timestamp windowNumber:windowNumber context:nil eventNumber:-1 
                     clickCount:CPDOMEventGetClickCount(_lastMouseDown, timestamp, location) pressure:0]];
-
+ 
             return;
         }
         else if ([CPPlatform supportsDragAndDrop])
@@ -1059,7 +1059,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
             _DOMBodyElement.setAttribute("draggable", "true");
             _DOMBodyElement.style["-khtml-user-drag"] = "element";
         }
-
+ 
         event = _CPEventFromNativeMouseEvent(aDOMEvent, CPLeftMouseDown, location, modifierFlags, timestamp, windowNumber, nil, -1, CPDOMEventGetClickCount(_lastMouseDown, timestamp, location), 0);
                     
         _mouseIsDown = YES;
@@ -1070,25 +1070,25 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     {
         if (_DOMEventMode)
             return;
-
+ 
         event = _CPEventFromNativeMouseEvent(aDOMEvent, _mouseIsDown ? CPLeftMouseDragged : CPMouseMoved, location, modifierFlags, timestamp, windowNumber, nil, -1, 1, 0);
     }
-
+ 
     var isDragging = [[CPDragServer sharedDragServer] isDragging];
-
+ 
     if (event && (!isDragging || !supportsNativeDragAndDrop))
     {
         event._DOMEvent = aDOMEvent;
         
         [CPApp sendEvent:event];
     }
-
+ 
     if (StopDOMEventPropagation && (!supportsNativeDragAndDrop || type !== "mousedown" && !isDragging))
         CPDOMEventStop(aDOMEvent, self);
-
+ 
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
-
+ 
  (CPArray)orderedWindowsAtLevel:(int)aLevel
 {
     var layer = [self layerAtLevel:aLevel create:NO];
@@ -1098,7 +1098,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     
     return [layer orderedWindows];
 }
-
+ 
 - (CPDOMWindowLayer)layerAtLevel:(int)aLevel create:(BOOL)aFlag
 {
     var layer = [_windowLayers objectForKey:aLevel];
@@ -1126,7 +1126,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
             else
                 low = middle + 1;
         }
-
+ 
         [_windowLevels insertObject:aLevel atIndex:_windowLevels[middle] > aLevel ? middle : middle + 1];
         layer._DOMElement.style.zIndex = aLevel;
         _DOMBodyElement.appendChild(layer._DOMElement);
@@ -1134,7 +1134,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     
     return layer;
 }
-
+ 
 - (void)order:(CPWindowOrderingMode)aPlace window:(CPWindow)aWindow relativeTo:(CPWindow)otherWindow
 {
     // Grab the appropriate level for the layer, and create it if 
@@ -1145,46 +1145,46 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     // If layer is nil, this will be a no-op.
     if (aPlace == CPWindowOut)
         return [layer removeWindow:aWindow];
-
+ 
     // Place the window at the appropriate index.
     [layer insertWindow:aWindow atIndex:(otherWindow ? (aPlace == CPWindowAbove ? otherWindow._index + 1 : otherWindow._index) : CPNotFound)];
 }
-
+ 
 - (void)_removeLayers
 {
     var levels = _windowLevels,
         layers = _windowLayers,
         levelCount = levels.length;
-
+ 
     while (levelCount--)
     {
         var layer = [layers objectForKey:levels[levelCount]];
-
+ 
         _DOMBodyElement.removeChild(layer._DOMElement);
     }
 }
-
+ 
 - (void)_addLayers
 {
     var levels = _windowLevels,
         layers = _windowLayers,
         levelCount = levels.length;
-
+ 
     while (levelCount--)
     {
         var layer = [layers objectForKey:levels[levelCount]];
-
+ 
         _DOMBodyElement.appendChild(layer._DOMElement);
     }
 }
-
+ 
 /* @ignore */
 - (id)_dragHitTest:(CPPoint)aPoint pasteboard:(CPPasteboard)aPasteboard
 {
     var levels = _windowLevels,
         layers = _windowLayers,
         levelCount = levels.length;
-
+ 
     while (levelCount--)
     {
         // Skip any windows above or at the dragging level.
@@ -1197,10 +1197,10 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
         while (windowCount--)
         {
             var theWindow = windows[windowCount];
-
+ 
             if ([theWindow _sharesChromeWithPlatformWindow])
                 return [theWindow _dragHitTest:aPoint pasteboard:aPasteboard];
-
+ 
             if ([theWindow containsPoint:aPoint])
                 return [theWindow _dragHitTest:aPoint pasteboard:aPasteboard];
         }
@@ -1208,33 +1208,33 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     
     return nil;
 }
-
+ 
 /* @ignore */
 - (void)_propagateCurrentDOMEvent:(BOOL)aFlag
 {
     StopDOMEventPropagation = !aFlag;
 }
-
+ 
 - (BOOL)_willPropagateCurrentDOMEvent
 {
     return !StopDOMEventPropagation;
 }
-
+ 
 - (CPWindow)hitTest:(CPPoint)location
 {
     if (self._only) 
         return self._only;
-
+ 
     var levels = _windowLevels,
         layers = _windowLayers,
         levelCount = levels.length,
         theWindow = nil;
-
+ 
     while (levelCount-- && !theWindow)
     {
         var windows = [layers objectForKey:levels[levelCount]]._windows,
             windowCount = windows.length;
-
+ 
         while (windowCount-- && !theWindow)
         {
             var candidateWindow = windows[windowCount];
@@ -1243,10 +1243,10 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                 theWindow = candidateWindow;
         }
     }
-
+ 
     return theWindow;
 }
-
+ 
 /*!
     When using command (mac) or control (windows), keys are propagated to the browser by default.  
     To prevent a character key from propagating (to prevent its default action, and instead use it
@@ -1259,7 +1259,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     for(var i=characters.length; i>0; i--)
         CharacterKeysToPrevent[""+characters[i-1].toLowerCase()] = YES;
 }
-
+ 
 /*!
     @param character a character to stop propagating keypresses to the browser.
 */
@@ -1267,7 +1267,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
 {
     CharacterKeysToPrevent[character.toLowerCase()] = YES;
 }
-
+ 
 /*!
     Clear the list of characters for which we are not sending keypresses to the browser.
 */
@@ -1275,7 +1275,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
 {
     CharacterKeysToPrevent = {};
 }
-
+ 
 /*!
     Prevent these keyCodes from sending their keypresses to the browser.
     @param keyCodes an array of keycodes to prevent propagation.
@@ -1285,7 +1285,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     for(var i=keyCodes.length; i>0; i--)
         KeyCodesToPrevent[keyCodes[i-1]] = YES;
 }
-
+ 
 /*!
     Prevent this keyCode from sending its key events to the browser.
     @param keyCode a keycode to prevent propagation.
@@ -1294,7 +1294,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
 {
     KeyCodesToPrevent[keyCode] = YES;
 }
-
+ 
 /*!
     Clear the list of keyCodes for which we are not sending keypresses to the browser.
 */
@@ -1302,15 +1302,15 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
 {
     KeyCodesToPrevent = {};
 }
-
+ 
 @end
-
+ 
 var CPEventClass = [CPEvent class];
-
+ 
 var _CPEventFromNativeMouseEvent = function(aNativeEvent, anEventType, aPoint, modifierFlags, aTimestamp, aWindowNumber, aGraphicsContext, anEventNumber, aClickCount, aPressure)
 {
     aNativeEvent.isa = CPEventClass;
-
+ 
     aNativeEvent._type = anEventType;
     aNativeEvent._location = aPoint;
     aNativeEvent._modifierFlags = modifierFlags;
@@ -1321,13 +1321,13 @@ var _CPEventFromNativeMouseEvent = function(aNativeEvent, anEventType, aPoint, m
     aNativeEvent._eventNumber = anEventNumber;
     aNativeEvent._clickCount = aClickCount;
     aNativeEvent._pressure = aPressure;
-
+ 
     return aNativeEvent;
 }
-
+ 
 var CLICK_SPACE_DELTA   = 5.0,
     CLICK_TIME_DELTA    = (typeof document != "undefined" && document.addEventListener) ? 350.0 : 1000.0;
-
+ 
 var CPDOMEventGetClickCount = function(aComparisonEvent, aTimestamp, aLocation)
 {
     if (!aComparisonEvent)
@@ -1339,27 +1339,27 @@ var CPDOMEventGetClickCount = function(aComparisonEvent, aTimestamp, aLocation)
         ABS(comparisonLocation.x - aLocation.x) < CLICK_SPACE_DELTA && 
         ABS(comparisonLocation.y - aLocation.y) < CLICK_SPACE_DELTA) ? [aComparisonEvent clickCount] + 1 : 1;
 }
-
+ 
 var CPDOMEventStop = function(aDOMEvent, aPlatformWindow)
 {
     // IE Model
     aDOMEvent.cancelBubble = true;
     aDOMEvent.returnValue = false;
-
+ 
     // W3C Model
     if (aDOMEvent.preventDefault)
         aDOMEvent.preventDefault();
-
+ 
     if (aDOMEvent.stopPropagation)
         aDOMEvent.stopPropagation();
-
+ 
     if (aDOMEvent.type === CPDOMEventMouseDown)
     {
         aPlatformWindow._DOMFocusElement.focus();
         aPlatformWindow._DOMFocusElement.blur();
     }
 }
-
+ 
 function CPWindowObjectList()
 {
     var platformWindow = [CPPlatformWindow primaryPlatformWindow],
@@ -1367,19 +1367,19 @@ function CPWindowObjectList()
         layers = platformWindow._windowLayers,
         levelCount = levels.length,
         windowObjects = [];
-
+ 
     while (levelCount--)
     {
         var windows = [layers objectForKey:levels[levelCount]]._windows,
             windowCount = windows.length;
-
+ 
         while (windowCount--)
             windowObjects.push(windows[windowCount]);
     }
-
+ 
     return windowObjects;
 }
-
+ 
 function CPWindowList()
 {
     var platformWindow = [CPPlatformWindow primaryPlatformWindow],
@@ -1387,15 +1387,15 @@ function CPWindowList()
         layers = platformWindow._windowLayers,
         levelCount = levels.length,
         windowNumbers = [];
-
+ 
     while (levelCount--)
     {
         var windows = [layers objectForKey:levels[levelCount]]._windows,
             windowCount = windows.length;
-
+ 
         while (windowCount--)
             windowNumbers.push([windows[windowCount] windowNumber]);
     }
-
+ 
     return windowNumbers;
 }
