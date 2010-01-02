@@ -862,7 +862,7 @@ CPRunContinuesResponse  = -1002;
         [CPException raise:CPInternalInconsistencyException reason:@"Currently only CPDocModalWindowMask style mask is supported for attached sheets"];
         return;
     }
-    
+    [aWindow orderFront:self];
     [aSheet orderFront:self];
     
     [aWindow _attachSheet:aSheet modalDelegate:aModalDelegate didEndSelector:aDidEndSelector contextInfo:aContextInfo];
