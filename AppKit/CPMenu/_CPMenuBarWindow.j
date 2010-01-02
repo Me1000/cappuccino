@@ -42,6 +42,7 @@ var _CPMenuBarWindowBackgroundColor = nil,
     var bundle = [CPBundle bundleForClass:self];
     
     _CPMenuBarWindowFont = [CPFont boldSystemFontOfSize:12.0];
+    
 }
 
 + (CPFont)font
@@ -60,7 +61,6 @@ var _CPMenuBarWindowBackgroundColor = nil,
 
     if (self)
     {
-        // FIXME: http://280north.lighthouseapp.com/projects/13294-cappuccino/tickets/39-dont-allow-windows-to-go-above-menubar
         [self setLevel:-1];//CPTornOffMenuWindowLevel];
         [self setAutoresizingMask:CPWindowWidthSizable];
      
@@ -82,6 +82,7 @@ var _CPMenuBarWindowBackgroundColor = nil,
         [_titleField setTextShadowOffset:CGSizeMake(0, 1)];
         
         [contentView addSubview:_titleField];
+        _worksWhenModal = YES;
     }
     
     return self;
