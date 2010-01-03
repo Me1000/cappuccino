@@ -1042,8 +1042,11 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     
     if(mask === CPTableViewUniformColumnAutoresizingStyle)
     {
-        //FIX ME: needs to respect proportion of the the columns set width...
+        // FIX ME: needs to respect proportion of the the columns set width...
         // this can also get slow when there are many rows
+        // do this by getting the width of the new size and subtracting it from the width of the old size dividing the difference by the number of visible rows. 
+        // loop trough the rows one by one adding the quotient to each row be sure to check for min/max widths when doing it.
+        
         var superview = [self superview];
  
         if (!superview)
@@ -2191,15 +2194,15 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 - (void)interpretKeyEvents:(id)anEvent
 {
 	var key = [anEvent keyCode];
- 
-	if(key == CPDeleteKeyCode)
-	{
-	   var obj = [self delegate];
-	   if([_delegate respondsToSelector: @selector(tableViewDeleteKeyPressed:)])
+    
+    if(key === CPReturnKeyCode && _target && _action)
+        [self sendAction:_action to:_target];
+
+    
+	if(key === CPDeleteKeyCode && [_delegate respondsToSelector: @selector(tableViewDeleteKeyPressed:)])
             [_delegate tableViewDeleteKeyPressed:self];
-	}
  
-	if(key == CPUpArrowKeyCode)
+	if(key === CPUpArrowKeyCode)
 	{
 	   if([[self selectedRowIndexes] count] > 0)
 	   {
