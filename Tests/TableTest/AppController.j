@@ -36,6 +36,7 @@ CPLogRegister(CPLogConsole);
     var iconColumn = [[CPTableColumn alloc] initWithIdentifier:"icons"];
 
     [iconColumn setWidth:32.0];
+    [iconColumn setMinWidth:32.0];
     [iconColumn setDataView:iconView];
 
     [tableView addTableColumn:iconColumn];
@@ -58,7 +59,7 @@ CPLogRegister(CPLogConsole);
 
 //    [textDataView setBackgroundColor:[[CPColor redColor] colorWithAlphaComponent:0.5]];
 
-    for (var i = 1; i <= 2; i++)
+    for (var i = 1; i <= 3; i++)
     {
         var column = [[CPTableColumn alloc] initWithIdentifier:String(i)];
 
@@ -67,6 +68,7 @@ CPLogRegister(CPLogConsole);
         //[column setWidth:[[column headerView] frame].size.width + 20];
 
         [column setWidth:200.0];
+        [column setMinWidth:150.0];
 
         [column setDataView:textDataView];
         [column setEditable:YES];
@@ -167,9 +169,26 @@ CPLogRegister(CPLogConsole);
 
 @end
 
-/*
+
 @implementation CPTableView (newstuff)
-- (void)FIXMESelectRow:(CGRect)aRect
+{
+    BOOL        _verticalMotionCanDrag;
+    unsigned    _destinationDragStyle;
+}
+
+/*
+- (CPImage)dragImageForRowsWithIndexes:(CPIndexSet)dragRows tableColumns:(CPArray)theTableColumns event:(CPEvent)dragEvent offset:(CPPointPointer)dragImageOffset
+- (BOOL)canDragRowsWithIndexes:(CPIndexSet)rowIndexes atPoint:(CGPoint)mouseDownPoint
+- (void)setDraggingSourceOperationMask:(CPDragOperation)mask forLocal:(BOOL)isLocal
+- (void)setVerticalMotionCanBeginDrag:(BOOL)flag
+- (BOOL)verticalMotionCanBeginDrag
+- (CPTableViewDraggingDestinationFeedbackStyle)draggingDestinationFeedbackStyle
+- (void)setDraggingDestinationFeedbackStyle:(NSTableViewDraggingDestinationFeedbackStyle)style
+- (void)setDropRow:(NSInteger)row dropOperation:(NSTableViewDropOperation)operation
+*/
+- (NSTableViewDraggingDestinationFeedbackStyle)draggingDestinationFeedbackStyle
+
+/*- (void)FIXMESelectRow:(CGRect)aRect
 {
     var _columnArray = _tableColumns;
     var columnIndex = 0,
@@ -196,18 +215,101 @@ CPLogRegister(CPLogConsole);
         }
     }
 }
-@end
+@end*/
 
-@implementation tableCell : CPTextField
-{}
 
-- (void)setSelected:(BOOL)aFlag
+
+- (BOOL)startTrackingAt:(CGPoint)aPoint
 {
-    alert();
-    if(aFlag)
-        [self setTextColor:[CPColor whiteColor]];
-    else(aFlag)
-        [self setTextColor:[CPColor blackColor]];
-}*/
+    var row = [self rowAtPoint:aPoint];
+    
+    //if the user clicks outside a row then deslect everything
+    if(row < 0 && _allowsEmptySelection)
+        [self selectRowIndexes:[CPIndexSet indexSet] byExtendingSelection:NO];
+ 
+    [self _noteSelectionIsChanging];
+ 
+    if ([self mouseDownFlags] & CPShiftKeyMask)
+        _selectionAnchorRow = (ABS([_selectedRowIndexes firstIndex] - row) < ABS([_selectedRowIndexes lastIndex] - row)) ?
+            [_selectedRowIndexes firstIndex] : [_selectedRowIndexes lastIndex];
+    else
+        _selectionAnchorRow = row;
+ 
+    _previouslySelectedRowIndexes = nil;
+    
+    if (_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_) {
+        _startTrackingPoint = aPoint;
+        _startTrackingTimestamp = new Date();
+        _trackingPointMovedOutOfClickSlop = NO;
+    }
+ 
+    [self _updateSelectionWithMouseAtRow:row];
+    
+    [[self window] makeFirstResponder:self];
+ 
+    return YES;
+}
+ 
+- (BOOL)continueTracking:(CGPoint)lastPoint at:(CGPoint)aPoint
+{
+    var row = [self rowAtPoint:aPoint];
+    
+    [self _updateSelectionWithMouseAtRow:row];
+    [self scrollRowToVisible:row];
+    [self _updateSelectionWithMouseAtRow:[self rowAtPoint:aPoint]];
+    
+    if ((_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_)
+        && !_trackingPointMovedOutOfClickSlop)
+    {
+        var CLICK_SPACE_DELTA = 5.0; // Stolen from AppKit/Platform/DOM/CPPlatformWindow+DOM.j
+        if (ABS(aPoint.x - _startTrackingPoint.x) > CLICK_SPACE_DELTA
+            || ABS(aPoint.y - _startTrackingPoint.y) > CLICK_SPACE_DELTA)
+        {
+            _trackingPointMovedOutOfClickSlop = YES;
+        }
+    }
+ 
+    return YES;
+}
+ 
+- (void)stopTracking:(CGPoint)lastPoint at:(CGPoint)aPoint mouseIsUp:(BOOL)mouseIsUp
+{
+    var CLICK_TIME_DELTA = 1000,
+        columnIndex,
+        column,
+        rowIndex,
+        shouldEdit = YES;
+    
+    if (![_previouslySelectedRowIndexes isEqualToIndexSet:_selectedRowIndexes])
+        [self _noteSelectionDidChange];
+    
+    if (mouseIsUp
+        && (_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_)
+        && !_trackingPointMovedOutOfClickSlop
+        && (((new Date()).getTime() - _startTrackingTimestamp.getTime()) <= CLICK_TIME_DELTA))
+    {
+        columnIndex = [self columnAtPoint:lastPoint];
+        if (columnIndex !== -1) 
+        {
+            column = _tableColumns[columnIndex];
+            if ([column isEditable]) 
+            {
+                rowIndex = [self rowAtPoint:aPoint];
+                if (rowIndex !== -1) 
+                {
+                    if (_implementedDelegateMethods & CPTableViewDelegate_tableView_shouldEditTableColumn_row_)
+                        shouldEdit = [_delegate tableView:self shouldEditTableColumn:column row:rowIndex];
+                    if (shouldEdit) 
+                    {
+                        _editingCellIndex = CGPointMake(columnIndex, rowIndex);
+                        [self reloadDataForRowIndexes:[CPIndexSet indexSetWithIndex:rowIndex]
+                            columnIndexes:[CPIndexSet indexSetWithIndex:columnIndex]];
+                    }
+                }
+            }
+        }
+        
+    }
+}
 
 @end

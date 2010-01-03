@@ -64,10 +64,30 @@ var CPTableViewDelegate_selectionShouldChangeInTableView_                       
     CPTableViewDelegate_tableView_willDisplayView_forTableColumn_row_                                   = 1 << 17,
     CPTableViewDelegate_tableViewSelectionDidChange_                                                    = 1 << 18,
     CPTableViewDelegate_tableViewSelectionIsChanging_                                                   = 1 << 19;
+    
+//CPTableViewDraggingDestinationFeedbackStyles
+CPTableViewDraggingDestinationFeedbackStyleNone = -1,
+CPTableViewDraggingDestinationFeedbackStyleRegular = 0,
+CPTableViewDraggingDestinationFeedbackStyleSourceList = 1;
+    
+//CPTableViewDraggingDestinationFeedbackStyles
+CPTableViewDropOn = 0,
+CPTableViewDropAbove = 1;
+
+//These constants are used by draggingSourceOperationMask.
+CPDragOperationNone    = 0,
+CPDragOperationCopy    = 1,
+CPDragOperationLink    = 2,
+CPDragOperationGeneric = 4,
+CPDragOperationPrivate = 8,
+CPDragOperationMove    = 16,
+CPDragOperationDelete  = 32,
+CPDragOperationEvery   = 10000;
  
 // TODO: add docs
- 
-CPTableViewSelectionHighlightStyleRegular = 0;
+
+CPTableViewSelectionHighlightStyleNone = -1,
+CPTableViewSelectionHighlightStyleRegular = 0,
 CPTableViewSelectionHighlightStyleSourceList = 1;
  
 CPTableViewGridNone                    = 0;
