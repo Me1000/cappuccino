@@ -1444,10 +1444,11 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 - (CPImage)dragImageForRowsWithIndexes:(CPIndexSet)dragRows tableColumns:(CPArray)theTableColumns event:(CPEvent)dragEvent offset:(CPPointPointer)dragImageOffset
 {
     // FIXME: by default we should construct an image/view of the selcted rows which are visible
-    var theDragView = [[CPImageView alloc] initWithFrame:_CGRectMake(0,0,32,32)];
-    [theDragView setImage:[[CPImage alloc] initWithContentsOfFile:@"Frameworks/AppKit/Resources/GenericFile.png" size:CGSizeMake(32,32)]];
-    
-    return theDragView;
+    //var theDragView = [[CPImageView alloc] initWithFrame:_CGRectMake(0,0,32,32)];
+    //[theDragView setImage:[[CPImage alloc] initWithContentsOfFile:@"Frameworks/AppKit/Resources/GenericFile.png" size:CGSizeMake(32,32)]];
+    var image = [[CPImage alloc] initWithContentsOfFile:@"Frameworks/AppKit/Resources/GenericFile.png" size:CGSizeMake(32,32)];
+    //return theDragView;
+    return image;
 }
 
 - (void)setDraggingSourceOperationMask:(CPDragOperation)mask forLocal:(BOOL)isLocal
@@ -2147,9 +2148,9 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         if([self canDragRowsWithIndexes:_draggedRowIndexes atPoint:aPoint] && [_dataSource tableView:self writeRowsWithIndexes:_draggedRowIndexes toPasteboard:pboard])
         {
             //create drag view/image
-            var theDragView = [self dragImageForRowsWithIndexes:_draggedRowIndexes tableColumns:_exposedColumns event:[CPApp currentEvent] offset:CGSizeMakeZero()];
+            var theDragImage = [self dragImageForRowsWithIndexes:_draggedRowIndexes tableColumns:_exposedColumns event:[CPApp currentEvent] offset:CGSizeMakeZero()];
             //we should begin the drag opperation here
-            [self dragView:theDragView at:aPoint offset:CGSizeMakeZero() event:[CPApp currentEvent] pasteboard:pboard source:self slideBack:YES];
+            [self dragImage:theDragImage at:aPoint offset:CGSizeMakeZero() event:[CPApp currentEvent] pasteboard:pboard source:self slideBack:YES];
             //console.log([[CPDragServer sharedDragServer] draggingSource])
             // FIX ME: figure out what to do with the damn operation mask, does capp not support this yet?
             // FIX ME: set the operation mask to _dragOperationDefaultMask
