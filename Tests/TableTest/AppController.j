@@ -93,7 +93,7 @@ CPLogRegister(CPLogConsole);
 
     [tableView setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
 
-    var scrollView = [[CPScrollView alloc] initWithFrame:[view bounds]];
+    var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(100, 100, CGRectGetWidth([view bounds]), CGRectGetHeight([view bounds]))];
     [tableView setRowHeight:32.0];
     [scrollView setDocumentView:tableView];
     [scrollView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
@@ -104,7 +104,7 @@ CPLogRegister(CPLogConsole);
 
     [tableView setDelegate:self];
     [tableView setDataSource:self];
-    
+    [tableView setRowHeight:22.0];
     [tableView setVerticalMotionCanBeginDrag:NO];
     [tableView setDraggingDestinationFeedbackStyle:CPTableViewDropOn];
     [tableView registerForDraggedTypes:[CPArray arrayWithObject:tableTestDragType]];
@@ -434,3 +434,66 @@ var CPTableViewDelegate_selectionShouldChangeInTableView_                       
     [self reloadData];
 }
 @end*/
+
+/*@implementation CPTableView (dfhkljadsfh)
+- (void)stopTracking:(CGPoint)lastPoint at:(CGPoint)aPoint mouseIsUp:(BOOL)mouseIsUp
+{
+
+    _isSelectingSession = NO;
+    
+    var CLICK_TIME_DELTA = 1000,
+        columnIndex,
+        column,
+        rowIndex,
+        shouldEdit = YES;
+        
+    if ([_dataSource respondsToSelector:@selector(tableView:writeRowsWithIndexes:toPasteboard:)])
+    {
+        rowIndex = [self rowAtPoint:aPoint];
+        if (rowIndex !== -1) 
+        {
+            if(_draggedRowIndexes !== nil)
+            {
+                _draggedRowIndexes = nil;
+                return;
+            }
+            // if the table has drag support then we use mouseUp to select a single row.
+            _previouslySelectedRowIndexes = nil;
+            [self _updateSelectionWithMouseAtRow:rowIndex];
+            console.log("update");
+        }
+    }
+    
+    if (![_previouslySelectedRowIndexes isEqualToIndexSet:_selectedRowIndexes])
+        [self _noteSelectionDidChange];
+    
+    return;
+    if (mouseIsUp
+        && (_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_)
+        && !_trackingPointMovedOutOfClickSlop
+        && (((new Date()).getTime() - _startTrackingTimestamp.getTime()) <= CLICK_TIME_DELTA))
+    {
+        columnIndex = [self columnAtPoint:lastPoint];
+        if (columnIndex !== -1) 
+        {
+            column = _tableColumns[columnIndex];
+            if ([column isEditable]) 
+            {
+                rowIndex = [self rowAtPoint:aPoint];
+                if (rowIndex !== -1) 
+                {
+                    
+                    if (_implementedDelegateMethods & CPTableViewDelegate_tableView_shouldEditTableColumn_row_)
+                        shouldEdit = [_delegate tableView:self shouldEditTableColumn:column row:rowIndex];
+                    if (shouldEdit) 
+                    {
+                        _editingCellIndex = CGPointMake(columnIndex, rowIndex);
+                        [self reloadDataForRowIndexes:[CPIndexSet indexSetWithIndex:rowIndex]
+                            columnIndexes:[CPIndexSet indexSetWithIndex:columnIndex]];
+                    }
+                }
+            }
+        }
+        
+    }
+}*/
