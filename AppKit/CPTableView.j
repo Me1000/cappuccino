@@ -2289,7 +2289,10 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         contentview = [scrollview contentView],
         dropOperation = [self _proposedDropOperation];
         
-        location = [contentview convertPoint:location fromView:scrollview];
+       location = [contentview convertPoint:location fromView:nil];
+        if(_headerView)
+            location.y += CGRectGetHeight([_headerView bounds]);
+            
         var row = [self rowAtPoint:location] - 1;
     
     //FIX ME: if the operation is CPTableViewDropAbove, we should be able to drop BELOW... 
