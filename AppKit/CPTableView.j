@@ -2186,7 +2186,6 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
  
 - (void)stopTracking:(CGPoint)lastPoint at:(CGPoint)aPoint mouseIsUp:(BOOL)mouseIsUp
 {
-    _draggedRowIndexes = nil;
     _isSelectingSession = NO;
     
     var CLICK_TIME_DELTA = 1000,
@@ -2200,6 +2199,11 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         rowIndex = [self rowAtPoint:aPoint];
         if (rowIndex !== -1) 
         {
+            if(_draggedRowIndexes !== nil)
+            {
+                _draggedRowIndexes = nil;
+                return;
+            }
             // if the table has drag support then we use mouseUp to select a single row.
             _previouslySelectedRowIndexes = nil;
             [self _updateSelectionWithMouseAtRow:rowIndex];
