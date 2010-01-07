@@ -802,6 +802,12 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     * - allowsTypeSelect
     * - setAllowsTypeSelect:
 */
+- (void)deselectAll
+{
+    [self selectRowIndexes:[CPIndexSet indexSet] byExtendingSelection:NO];
+    [self selectColumnIndexes:[CPIndexSet indexSet] byExtendingSelection:NO];
+}
+
 //Table Dimensions
  
 - (int)numberOfColumns
@@ -2115,7 +2121,6 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     }
     
     [[self window] makeFirstResponder:self];
- 
     return YES;
 }
  
@@ -2160,7 +2165,6 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         }
     }
     
-    
     _isSelectingSession = YES;
     [self _updateSelectionWithMouseAtRow:row];
     [self scrollRowToVisible:row];
@@ -2190,6 +2194,17 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         column,
         rowIndex,
         shouldEdit = YES;
+        
+    if(_implementedDataSourceMethods & CPTableViewDataSource_tableView_writeRowsWithIndexes_toPasteboard_)
+    {
+        rowIndex = [self rowAtPoint:aPoint];
+        if (rowIndex !== -1) 
+        {
+            // if the table has drag support then we use mouseUp to select a single row.
+            _previouslySelectedRowIndexes = nil;
+            [self _updateSelectionWithMouseAtRow:rowIndex];
+        }
+    }
     
     if (![_previouslySelectedRowIndexes isEqualToIndexSet:_selectedRowIndexes])
         [self _noteSelectionDidChange];
@@ -2208,12 +2223,6 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
                 rowIndex = [self rowAtPoint:aPoint];
                 if (rowIndex !== -1) 
                 {
-                    if([_dataSource respondsToSelector:@selector(tableView:writeRowsWithIndexes:toPasteboard:)])
-                    {
-                        // if the table has drag support then we use mouseUp to select a single row.
-                        _previouslySelectedRowIndexes = nil;
-                        [self _updateSelectionWithMouseAtRow:rowIndex];
-                    }
                     
                     if (_implementedDelegateMethods & CPTableViewDelegate_tableView_shouldEditTableColumn_row_)
                         shouldEdit = [_delegate tableView:self shouldEditTableColumn:column row:rowIndex];
