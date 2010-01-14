@@ -862,8 +862,6 @@ CPRunContinuesResponse  = -1002;
         [CPException raise:CPInternalInconsistencyException reason:@"Currently only CPDocModalWindowMask style mask is supported for attached sheets"];
         return;
     }
-    [aWindow orderFront:self];
-    [aSheet orderFront:self];
     
     [aWindow _attachSheet:aSheet modalDelegate:aModalDelegate didEndSelector:aDidEndSelector contextInfo:aContextInfo];
 }
@@ -1044,7 +1042,7 @@ var _CPAppBootstrapperActions = nil;
 
 + (void)actions
 {
-    return [@selector(bootstrapPlatform), @selector(loadDefaultTheme), @selector(loadMainCibFile), @selector(finishBootstrappingPlatform)];
+    return [@selector(bootstrapPlatform), @selector(loadDefaultTheme), @selector(loadMainCibFile)];
 }
 
 + (void)performActions
@@ -1061,11 +1059,6 @@ var _CPAppBootstrapperActions = nil;
     }
 
     [CPApp run];
-}
-
-+ (void)finishBootstrappingPlatform
-{
-    [CPPlatform finishBootstrap];
 }
 
 + (BOOL)bootstrapPlatform
