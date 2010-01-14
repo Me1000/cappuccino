@@ -522,7 +522,7 @@
 - (id)objectAtIndex:(int)anIndex
 {
     if (anIndex >= length || anIndex < 0)
-        [CPException raise:CPRangeException reason:@"index (" + anIndex + @") out of bounds (0 - " + length + @")"];
+        [CPException raise:CPRangeException reason:@"index (" + anIndex + @") beyond bounds (" + length + @")"];
 
     return self[anIndex];
 }
@@ -534,14 +534,11 @@
 */
 - (CPArray)objectsAtIndexes:(CPIndexSet)indexes
 {
-    var index = [indexes firstIndex],
+    var index = CPNotFound,
         objects = [];
 
-    while(index != CPNotFound)
-    { 
-        [objects addObject:self[index]];
-        index = [indexes indexGreaterThanIndex:index];
-    }
+    while((index = [indexes indexGreaterThanIndex:index]) !== CPNotFound)
+        [objects addObject:[self objectAtIndex:index]];
 
     return objects;
 }

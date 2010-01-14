@@ -960,6 +960,12 @@ CPRunContinuesResponse  = -1002;
         [self._activeMenu cancelTracking];
 }
 
++ (CPString)defaultThemeName
+{
+    // FIXME: don't hardcode
+    return @"Aristo.blend";
+}
+
 @end
 
 var _CPModalSessionMake = function(aWindow, aStopCode)
@@ -1069,7 +1075,7 @@ var _CPAppBootstrapperActions = nil;
 
 + (BOOL)loadDefaultTheme
 {
-    var blend = [[CPThemeBlend alloc] initWithContentsOfURL:[[CPBundle bundleForClass:[CPApplication class]] pathForResource:@"Aristo.blend"]];
+    var blend = [[CPThemeBlend alloc] initWithContentsOfURL:[[CPBundle bundleForClass:[CPApplication class]] pathForResource:[CPApplication defaultThemeName]]];
 
     [blend loadWithDelegate:self];
 

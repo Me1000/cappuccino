@@ -16,7 +16,7 @@ function prompt () {
 }
  
 function which () {
-    echo "$PATH" | tr ":" "\n" | while read line; do [ -f "$line/$1" ] && echo "$line/$1" && return 0; done
+    echo "$PATH" | tr ":" "\n" | while read line; do [ -x "$line/$1" ] && echo "$line/$1" && return 0; done
 }
 
 function ask_remove_dir () {
@@ -24,6 +24,7 @@ function ask_remove_dir () {
     if [ -d "$dir" ]; then
         echo "================================================================================"
         echo "Found an existing Narwhal/Cappuccino installation, $dir. Remove it automatically now?"
+        echo "WARNING: custom modifications and installed packages in this installation WILL BE DELETED."
         if prompt; then
             rm -rf "$dir"
         fi
@@ -66,6 +67,8 @@ else
     tusk_install_command="install"
 fi
 
+github_project="280north-narwhal"
+github_path=$(echo "$github_project" | tr '-' '/')
 install_directory="/usr/local/narwhal"
 tmp_zip="/tmp/narwhal.zip"
 
@@ -74,36 +77,55 @@ PATH_SAVED="$PATH"
 ask_remove_dir "/usr/local/share/objj"
 ask_remove_dir "/usr/local/share/narwhal"
 ask_remove_dir "/usr/local/narwhal"
+if which "narwhal" > /dev/null; then
+    dir=$(dirname -- $(dirname -- $(which "narwhal")))
+    ask_remove_dir "$dir"
+fi
 
-if ! which "narwhal" > /dev/null; then
+install_narwhal=""
+if which "narwhal" > /dev/null; then
+    dir=$(dirname -- $(dirname -- $(which "narwhal")))
+    echo "Using Narwhal installation at \"$dir\". Is this correct?"
+    if ! prompt; then
+        echo "================================================================================"
+        echo "Narwhal JavaScript platform is required. Install it automatically now?"
+        if prompt; then
+            install_narwhal="yes"
+        fi
+    fi
+else
     echo "================================================================================"
     echo "Narwhal JavaScript platform is required. Install it automatically now?"
     if prompt; then
-        echo "================================================================================"
-        echo "To use the default location, \"$install_directory\", just hit enter/return, or enter another path:"
-        read input
-        if [ "$input" ]; then
-            install_directory="$input"
-        fi
-
-        if [ "$git_clone" ]; then
-            echo "Cloning Narwhal..."
-            git clone git://github.com/280north/narwhal.git "$install_directory"
-        else
-            echo "Downloading Narwhal..."
-            curl -L -o "$tmp_zip" "http://github.com/280north/narwhal/zipball/master"
-            echo "Installing Narwhal..."
-            unzip "$tmp_zip" -d "$install_directory"
-            rm "$tmp_zip"
-
-            mv $install_directory/280north-narwhal-*/* $install_directory/.
-            rm -rf $install_directory/280north-narwhal-*
-        fi
-        
-        if ! which "narwhal" > /dev/null; then
-            export PATH="$install_directory/bin:$PATH"
-        fi
+        install_narwhal="yes"
     fi
+fi
+
+if [ "$install_narwhal" ]; then
+    echo "================================================================================"
+    echo "To use the default location, \"$install_directory\", just hit enter/return, or enter another path:"
+    read input
+    if [ "$input" ]; then
+        install_directory="`cd \`dirname $input\`; pwd`/`basename $input`"
+    fi
+
+    if [ "$git_clone" ]; then
+        git_repo="git://github.com/$github_path.git"
+        echo "Cloning Narwhal from \"$git_repo\"..."
+        git clone "$git_repo" "$install_directory"
+    else
+        zip_ball="http://github.com/$github_path/zipball/master"
+        echo "Downloading Narwhal from \"$zip_ball\"..."
+        curl -L -o "$tmp_zip" "$zip_ball"
+        echo "Installing Narwhal..."
+        unzip "$tmp_zip" -d "$install_directory"
+        rm "$tmp_zip"
+
+        mv $install_directory/$github_project-*/* $install_directory/.
+        rm -rf $install_directory/$github_project-*
+    fi
+    
+    export PATH="$install_directory/bin:$PATH"
 fi
 
 if ! which "narwhal" > /dev/null; then
@@ -114,12 +136,12 @@ fi
 install_directory=$(dirname $(dirname $(which narwhal)))
 
 echo "================================================================================"
-echo "Using Narwhal installation at $install_directory. Is this correct?"
+echo "Using Narwhal installation at \"$install_directory\". Is this correct?"
 if ! prompt; then
     exit 1
 fi
 
-echo "Installing necessary dependencies..."
+echo "Installing necessary packages..."
 
 if ! tusk update; then
     echo "Error: unable to update tusk catalog. Check that you have sufficient permissions."
@@ -134,9 +156,13 @@ if [ `uname` = "Darwin" ]; then
     echo "This is optional but will make building and running Objective-J much faster."
     if prompt; then
         tusk $tusk_install_command narwhal-jsc
-        (cd "$install_directory/packages/narwhal-jsc" && make webkit)
         
-        if ! [ "$NARWHAL_ENGINE" = "jsc" ]; then
+        if ! (cd "$install_directory/packages/narwhal-jsc" && make webkit); then
+            echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            echo "WARNING: building narwhal-jsc failed. Hit enter to continue."
+            echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            read
+        elif ! [ "$NARWHAL_ENGINE" = "jsc" ]; then
             echo "================================================================================"
             echo "Rhino is the default Narwhal engine, should we change the default to JavaScriptCore for you?"
             echo "This can by overridden by setting the NARWHAL_ENGINE environment variable to \"jsc\" or \"rhino\"."
@@ -162,7 +188,7 @@ fi
 if [ "$CAPP_BUILD" ]; then
     if [ -d "$CAPP_BUILD" ]; then
         echo "================================================================================"
-        echo "An existing \$CAPP_BUILD directory at $CAPP_BUILD exists. The previous build may be incompatible. Remove it automatically now?"
+        echo "An existing \$CAPP_BUILD directory at \"$CAPP_BUILD\" exists. The previous build may be incompatible. Remove it automatically now?"
         if prompt; then
             rm -rf "$CAPP_BUILD"
         fi

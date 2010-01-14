@@ -1,4 +1,4 @@
-/*
+ /*
  * NSAppKit.j
  * nib2cib
  *
@@ -44,6 +44,7 @@
 @import "NSResponder.j"
 @import "NSScrollView.j"
 @import "NSScroller.j"
+@import "NSSearchField.j"
 @import "NSSet.j"
 @import "NSSecureTextField.j"
 @import "NSSegmentedControl.j"
@@ -55,6 +56,7 @@
 @import "NSTabViewItem.j"
 @import "NSTextField.j"
 @import "NSToolbar.j"
+@import "NSToolbarItem.j"
 @import "NSView.j"
 @import "NSViewController.j"
 @import "NSWindowTemplate.j"

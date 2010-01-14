@@ -32,14 +32,19 @@ parser.option("-F", "--framework", "frameworks")
     .help("Add a frameworks directory, relative to INPUT_PROJECT (default: ['Frameworks'])");
 
 parser.option("-E", "--environment", "environments")
-    .def(['W3C', 'IE7', 'IE8'])
+    .def(['W3C'])//, 'IE7', 'IE8'])
     .push()
     .help("Add a platform name (default: ['W3C', 'IE7', 'IE8'])");
 
-parser.option("-f", "--flatten", "flatten")
+parser.option("-l", "--flatten", "flatten")
     .def(false)
     .set(true)
     .help("Flatten all code into a single Application.js file and attempt add script tag to index.html (useful for Adobe AIR and CDN deployment)");
+
+parser.option("-f", "--force", "force")
+   .def(false)
+   .set(true)
+   .help("Force overwriting OUTPUT_PROJECT if it exists");
 
 parser.option("-n", "--nostrip", "strip")
     .def(true)
@@ -72,8 +77,18 @@ function main(args)
     //else
     //    CPLogRegisterRange(CPLogPrint, "fatal", "info");
 
-    var rootPath = FILE.path(options.args[0]).absolute();
-    var outputPath = FILE.path(options.args[1]).absolute();
+    // HACK: ensure trailing slashes for "relative" to work correctly
+    var rootPath = FILE.path(options.args[0]).join("").absolute();
+    var outputPath = FILE.path(options.args[1]).join("").absolute();
+
+    if (outputPath.exists()) {
+        if (options.force) {
+            outputPath.rmtree();
+        } else {
+            CPLog.error("OUTPUT_PROJECT " + outputPath + " exists. Use -f to overwrite.");
+            OS.exit(1);
+        }
+    }
 
     press(rootPath, outputPath, options);
 }
@@ -96,9 +111,7 @@ function press(rootPath, outputPath, options) {
     FILE.copyTree(rootPath, outputPath);
     
     for (var path in outputFiles) {
-        CPLog.trace("Writing: " + path);
-        
-        var file = outputPath.join(relativeToRootPath(path));
+        var file = outputPath.join(rootPath.relative(path));
         
         var parent = file.dirname();
         if (!parent.exists()) {
@@ -113,6 +126,7 @@ function press(rootPath, outputPath, options) {
         FILE.write(file, outputFiles[path], { charset : "UTF-8" });
     }
     
+    // strip known unnecessary files
     // outputPath.glob("**/Frameworks/Debug").forEach(function(debugFramework) {
     //     outputPath.join(debugFramework).rmtree();
     // });
@@ -124,10 +138,6 @@ function press(rootPath, outputPath, options) {
 }
 
 function pressEnvironment(rootPath, outputFiles, environment, options) {
-    
-    function relativeToRootPath(path) {
-        return pathRelativeTo(path, rootPath);
-    }
     
     var mainPath = String(rootPath.join(options.main));
     var frameworks = options.frameworks.map(function(framework) { return rootPath.join(framework); });
@@ -146,31 +156,32 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
     
     // flattening bookkeeping. keep track of the bundles and evaled code (in the correct order!)
     var bundleArchiveResponses = [];
+    var exectuableResponses = [];
     var evaledFragments = [];
 
     // here we hook into didReceiveBundleResponse to record the responses for --flattening
-    scope.objj_search.prototype.didReceiveBundleResponseOriginal = scope.objj_search.prototype.didReceiveBundleResponse;
-    scope.objj_search.prototype.didReceiveBundleResponse = function(aResponse) {
-        var fakeResponse = {
+    functionHookBefore(scope.objj_search.prototype, "didReceiveBundleResponse", function(aResponse) {
+        var response = {
             success : aResponse.success,
-            filePath : relativeToRootPath(aResponse.filePath)
+            filePath : rootPath.relative(aResponse.filePath).toString()
         };
     
-        if (aResponse.success)
-        {
+        if (aResponse.success) {
             var xmlString = serializer.serializeToString(aResponse.xml);
-            fakeResponse.text = CPPropertyListCreate280NorthData(CPPropertyListCreateFromXMLData({ string: xmlString })).string;
+            response.text = CPPropertyListCreate280NorthData(CPPropertyListCreateFromXMLData({ string: xmlString })).string;
         }
         
-        bundleArchiveResponses.push(fakeResponse);
-        
-        this.didReceiveBundleResponseOriginal.apply(this, arguments);
-    }
+        bundleArchiveResponses.push(response);
+    });
+    
+    functionHookBefore(scope.objj_search.prototype, "didReceiveExecutableResponse", function(aResponse) {
+        exectuableResponses.push(aResponse);
+    });
     
     var context = {
         ctx : ctx,
         scope : scope,
-        relativeToRootPath : relativeToRootPath
+        rootPath : rootPath
     };
     
     // phase 1: get global defines
@@ -183,8 +194,9 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
     
     // Log 
     CPLog.trace("Global defines:");
-    for (var i in dependencies)
-        CPLog.trace("    " + i + " => " + relativeToRootPath(dependencies[i]));
+    Object.keys(dependencies).sort().forEach(function(identifier) {
+        CPLog.trace("    " + identifier + " => " + rootPath.relative(dependencies[identifier]));
+    });
     
     // phase 2: walk the dependency tree (both imports and references) to determine exactly which files need to be included
     CPLog.error("PHASE 2: Walk dependency tree...");
@@ -219,14 +231,18 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
             total = 0;
         for (var path in scope.objj_files)
         {
+            // mark all ".keytheme"s as required
+            if (/\.keyedtheme$/.test(path))
+                requiredFiles[path] = true;
+            
             if (requiredFiles[path])
             {
-                CPLog.debug("Included: " + relativeToRootPath(path));
+                CPLog.debug("Included: " + rootPath.relative(path));
                 count++;
             }
             else
             {
-                CPLog.info("Excluded: " + relativeToRootPath(path));
+                CPLog.info("Excluded: " + rootPath.relative(path));
             }    
             total++;
         }
@@ -247,6 +263,9 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
     {
         // phase 3a: build single Application.js file (and modified index.html)
         CPLog.error("PHASE 3a: Flattening...");
+        
+        var applicationScriptName = "Application-"+environment+".js";
+        var indexHTMLName = "index-"+environment+".html";
         
         // Shim for faking bundle responses.
         // We're just defining it here so we can serialize the function. It's not used within press.
@@ -269,16 +288,50 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
 
             objj_bundles[aResponse.filePath] = bundle;
         }
+        var setupURIMaps = function(URIMaps) {
+            var DIRECTORY = function(aPath) { return (aPath).substr(0, (aPath).lastIndexOf('/') + 1); };
+            for (var bundleName in URIMaps) {
+                if (objj_bundles[bundleName]) {
+                    var URIMap = URIMaps[bundleName];
+                    objj_bundles[bundleName]._URIMap = {};
+                    for (var source in URIMap) {
+                        var URI = URIMap[source];
+                        if (URI.toLowerCase().indexOf("mhtml:") === 0)
+                            objj_bundles[bundleName]._URIMap[source] = "mhtml:" + DIRECTORY(window.location.href) + '/' + URI.substr("mhtml:".length);
+                    }
+                } else
+                    console.log("no bundle for " + bundleName);
+            }
+        }
         // **************************************************
         
         var applicationScript = [];
         
+        var URIMaps = {};
+        Object.keys(scope.objj_bundles).forEach(function(bundleName) {
+            var bundle = scope.objj_bundles[bundleName];
+            var path = rootPath.relative(bundle.path);
+            if (bundle._URIMap) {
+                URIMaps[path] = {};
+                Object.keys(bundle._URIMap).forEach(function(source) {
+                    var destination = bundle._URIMap[source];
+                    var match;
+                    if (match = destination.match(/^mhtml:[^!]*!(.*)$/))
+                        destination = "mhtml:" + applicationScriptName + "!" + match[1];
+                    URIMaps[path][source] = destination;
+                });
+            }
+        });
+
         // add fake bundle response bookkeeping
         applicationScript.push("(function() {")
         applicationScript.push("    var didReceiveBundleResponse = " + String(fakeDidReceiveBundleResponse));
+        applicationScript.push("    var setupURIMaps = " + String(setupURIMaps));
         applicationScript.push("    var bundleArchiveResponses = " + JSON.stringify(bundleArchiveResponses) + ";");
         applicationScript.push("    for (var i = 0; i < bundleArchiveResponses.length; i++)");
         applicationScript.push("        didReceiveBundleResponse(bundleArchiveResponses[i]);");
+        applicationScript.push("    var URIMaps = " + JSON.stringify(URIMaps) + ";");
+        applicationScript.push("    setupURIMaps(URIMaps);");
         applicationScript.push("})();");
         
         // add each fragment, wrapped in a function, along with OBJJ_CURRENT_BUNDLE bookkeeping
@@ -287,11 +340,11 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
             {
                 applicationScript.push("(function(OBJJ_CURRENT_BUNDLE) {");
                 applicationScript.push(fragment.info);
-                applicationScript.push("})(objj_bundles['"+relativeToRootPath(fragment.bundle.path)+"']);");
+                applicationScript.push("})(objj_bundles['"+rootPath.relative(fragment.bundle.path)+"']);");
             }
             else
             {
-                CPLog.info("Stripping " + relativeToRootPath(fragment.file.path));
+                CPLog.info("Stripping " + rootPath.relative(fragment.file.path));
             }
         });
         
@@ -301,13 +354,20 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
         applicationScript.push("else if (window.attachEvent)")
         applicationScript.push("    window.attachEvent('onload', main);");
         
+        // MHTML
+        // TODO: combine multiple MHTMLs
+        exectuableResponses.forEach(function(aResponse) {
+            var mhtmlStart = aResponse.text.lastIndexOf("/*");
+            var mhtmlEnd = aResponse.text.lastIndexOf("*/");
+            if (mhtmlStart >= 0 && mhtmlEnd > mhtmlStart) {
+                applicationScript.push(aResponse.text.slice(mhtmlStart, mhtmlEnd+2));
+            }
+        });
+        
         var indexHTML = FILE.read(FILE.join(rootPath, "index.html"), { charset : "UTF-8" });
         
         // comment out any OBJJ_MAIN_FILE defintions or objj_import() calls
         indexHTML = indexHTML.replace(/(\bOBJJ_MAIN_FILE\s*=|\bobjj_import\s*\()/g, '//$&');
-        
-        var applicationScriptName = "Application-"+environment+".js";
-        var indexHTMLName = "index-"+environment+".html";
         
         // add a script tag for Application.js at the very end of the <head> block
         indexHTML = indexHTML.replace(/([ \t]*)(<\/head>)/, '$1    <script src = "'+applicationScriptName+'" type = "text/javascript"></script>\n$1$2');
@@ -403,7 +463,7 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
                                 }
                             }
                             else
-                                CPLog.info("Ignoring import fragment " + file.fragments[i].info + " in " + relativeToRootPath(path));
+                                CPLog.info("Ignoring import fragment " + file.fragments[i].info + " in " + rootPath.relative(path));
                         }
                         else
                             CPLog.error("Unknown fragment type");
@@ -416,7 +476,7 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
                 }
             }
             else
-                CPLog.warn("No bundle for " + relativeToRootPath(path))
+                CPLog.warn("No bundle for " + rootPath.relative(path))
         }
 
         // phase 3.5: fix bundle plists
@@ -428,7 +488,7 @@ function pressEnvironment(rootPath, outputFiles, environment, options) {
                 dict = bundles[path].info,
                 replacedFiles = [dict objectForKey:"CPBundleReplacedFiles"];
             
-            CPLog.info("Modifying .sj: " + relativeToRootPath(path));
+            CPLog.info("Modifying .sj: " + rootPath.relative(path));
             
             if (replacedFiles)
             {
@@ -473,6 +533,16 @@ function pngcrushDirectory(directory) {
         }
     });
     system.stderr.print("");
+}
+
+function functionHookBefore(object, property, func)
+{
+    var original = object[property];
+    object[property] = function() {
+        func.apply(this, arguments);
+        var result = original.apply(this, arguments);
+        return result;
+    }
 }
 
 function pathRelativeTo(target, relativeTo)
