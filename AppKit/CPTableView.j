@@ -1461,6 +1461,57 @@ window.setTimeout(function(){
     return image;
 }
 
+- (CPImage)dragViewForRowsWithIndexes:(CPIndexSet)dragRows tableColumns:(CPArray)theTableColumns event:(CPEvent)dragEvent offset:(CPPointPointer)dragImageOffset
+{
+    var draggedRowsArray = [],
+        colCount = [theTableColumns count],
+        rowsCount = [dragRows count],
+        firstRowIndex = [dragRows firstIndex],
+        rowIndexesLength = [dragRows lastIndex] - firstRowIndex + 1;
+
+    [dragRows getIndexes:draggedRowsArray maxCount:-1 inIndexRange:CPMakeRange(firstRowIndex, rowIndexesLength)];
+    
+    var dragViewHeight = rowIndexesLength * [self rowHeight],
+        dragViewWidth = CGRectGetWidth([self exposedClipRect]);
+
+    var draggedView = [[CPView alloc] initWithFrame:CGRectMake(0, 0, dragViewWidth, dragViewHeight)];
+    
+    // calculate the dragImageOffset : we want the ghost row to be where the real row is.
+
+    var location = [self convertPoint:[dragEvent locationInWindow] fromView:nil];
+    var rect = [self rectOfRow:[dragRows firstIndex]];
+    var exposedMinX = CGRectGetMinX([self exposedClipRect]);
+    
+    dragImageOffset.x = exposedMinX + CGRectGetMinX(rect) - location.x + dragViewWidth/2;
+    dragImageOffset.y = CGRectGetMinY(rect) - location.y + dragViewHeight/2;
+
+    for (var i = 0; i < rowsCount ; i++)
+    {
+        var rowIndex = draggedRowsArray[i];
+        var dataViewOriginY = (rowIndex - firstRowIndex) * [self rowHeight];
+        for (var c = 0; c < colCount; c++)
+        {
+            var column = [theTableColumns objectAtIndex:c],
+                tableColumnUID = [column UID],
+                dataView = _dataViewsForTableColumns[tableColumnUID][rowIndex];
+            
+            var frame = [dataView frame];
+            frame.origin.y = dataViewOriginY;
+            frame.origin.x -= exposedMinX;
+            
+            var html = dataView._DOMElement.innerHTML;
+            var dataViewCopy = [[CPView alloc] initWithFrame:frame];
+            dataViewCopy._DOMElement.innerHTML = html;
+                      
+            [dataViewCopy setBackgroundColor:[CPColor colorWithWhite:1 alpha:0.5]];
+            
+            [draggedView addSubview:dataViewCopy];
+        }    
+    }
+    
+    return draggedView;
+}
+
 - (void)setDraggingSourceOperationMask:(CPDragOperation)mask forLocal:(BOOL)isLocal
 {
     //ignoral local for the time being since only one capp app can run at a time...
@@ -2158,9 +2209,29 @@ window.setTimeout(function(){
         if([self canDragRowsWithIndexes:_draggedRowIndexes atPoint:aPoint] && [_dataSource tableView:self writeRowsWithIndexes:_draggedRowIndexes toPasteboard:pboard])
         {
             //create drag view/image
-            var theDragImage = [self dragImageForRowsWithIndexes:_draggedRowIndexes tableColumns:_exposedColumns event:[CPApp currentEvent] offset:CGSizeMakeZero()];
-            //we should begin the drag opperation here
-            [self dragImage:theDragImage at:aPoint offset:CGSizeMakeZero() event:[CPApp currentEvent] pasteboard:pboard source:self slideBack:YES];
+            var draggedColumns = [_tableColumns objectsAtIndexes:_exposedColumns];                
+            
+            var dragViewOffset = CGPointMakeZero();
+            var theDragView = [self dragViewForRowsWithIndexes:_draggedRowIndexes tableColumns:draggedColumns event:[CPApp currentEvent] offset:dragViewOffset];
+                        
+             //we should begin the drag opperation here
+            if (theDragView != nil) // special behavior: if the subclass returns nil, ask the subclass for an image
+            {
+                var bounds = [theDragView bounds];
+                // Cocoa doc:"A dragImageOffset of NSZeroPoint will cause the image to be centered under the cursor."
+                var dragViewLocation = CGPointMake(aPoint.x + dragViewOffset.x - CGRectGetWidth(bounds)/2, aPoint.y + dragViewOffset.y - CGRectGetHeight(bounds)/2);
+                [self dragView:theDragView at:dragViewLocation offset:CGSizeMakeZero() event:[CPApp currentEvent] pasteboard:pboard source:self slideBack:YES];
+            }
+            else
+            {
+                var dragImageOffset = CGPointMakeZero();
+                var theDragImage = [self dragImageForRowsWithIndexes:_draggedRowIndexes tableColumns:draggedColumns event:[CPApp currentEvent] offset:dragImageOffset];
+                
+                var imageSize = [theDragImage size];
+                var dragImageLocation = CGPointMake(aPoint.x + dragImageOffset.x - imageSize.width/2, aPoint.y + dragImageOffset.y - imageSize.height/2);
+
+                [self dragImage:theDragImage at:dragImageLocation offset:CGSizeMakeZero() event:[CPApp currentEvent] pasteboard:pboard source:self slideBack:YES];
+            }
             //console.log([[CPDragServer sharedDragServer] draggingSource])
             // FIX ME: figure out what to do with the damn operation mask, does capp not support this yet?
             // FIX ME: set the operation mask to _dragOperationDefaultMask
