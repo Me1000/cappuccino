@@ -538,11 +538,11 @@ CPThemeStateEditable		= CPThemeState("editable");
 
     if (document.attachEvent)
     {
-        CPTextFieldCachedSelectStartFunction = document.body.onselectstart;
-        CPTextFieldCachedDragFunction = document.body.ondrag;
+        CPTextFieldCachedSelectStartFunction = [[self window] platformWindow]._DOMBodyElement.onselectstart;
+        CPTextFieldCachedDragFunction = [[self window] platformWindow]._DOMBodyElement.ondrag;
         
-        document.body.ondrag = function () {};
-        document.body.onselectstart = function () {};
+        [[self window] platformWindow]._DOMBodyElement.ondrag = function () {};
+        [[self window] platformWindow]._DOMBodyElement.onselectstart = function () {};
     }
     
     [self textDidFocus:[CPNotification notificationWithName:CPTextFieldDidFocusNotification object:self userInfo:nil]];
@@ -585,8 +585,8 @@ CPThemeStateEditable		= CPThemeState("editable");
         CPTextFieldCachedSelectStartFunction = nil;
         CPTextFieldCachedDragFunction = nil;
         
-        document.body.ondrag = CPTextFieldCachedDragFunction
-        document.body.onselectstart = CPTextFieldCachedSelectStartFunction
+        [[self window] platformWindow]._DOMBodyElement.ondrag = CPTextFieldCachedDragFunction;
+        [[self window] platformWindow]._DOMBodyElement.onselectstart = CPTextFieldCachedSelectStartFunction;
     }
     
 #endif
