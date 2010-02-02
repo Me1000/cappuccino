@@ -37,7 +37,9 @@ CPLogRegister(CPLogConsole);
     tableView = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 500.0, 500.0)];//[view bounds]];
 
     [tableView setAllowsMultipleSelection:YES];
+    [tableView setAllowsColumnSelection:YES];
     [tableView setUsesAlternatingRowBackgroundColors:YES];
+    [tableView setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithHexString:@"e4e7ff"], [CPColor colorWithHexString:@"f4e7ff"]]];
     [tableView setGridStyleMask:CPTableViewSolidHorizontalGridLineMask | CPTableViewSolidVerticalGridLineMask];
 
 //    [tableView setBackgroundColor:[CPColor blueColor]];
@@ -68,7 +70,7 @@ CPLogRegister(CPLogConsole);
 
 //    [textDataView setBackgroundColor:[[CPColor redColor] colorWithAlphaComponent:0.5]];
 
-    for (var i = 1; i <= 3; i++)
+    for (var i = 1; i <= 2; i++)
     {
         var column = [[CPTableColumn alloc] initWithIdentifier:String(i)];
 
@@ -85,7 +87,7 @@ CPLogRegister(CPLogConsole);
 
     //[tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
 
-    [tableView setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
+    // [tableView setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
 
     var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth([view bounds]), CGRectGetHeight([view bounds]))];
     [tableView setRowHeight:22.0];
