@@ -2172,9 +2172,13 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
             }
 
         }
-
-         CGContextMoveToPoint(context, minX, maxY);
-         CGContextAddLineToPoint(context, maxX, maxY);
+        
+        //if the row after the current row is not selected then there is no need to draw the bottom grid line white.
+        if([indexes containsObject:indexes[i]+1])
+        {
+            CGContextMoveToPoint(context, minX, maxY);
+            CGContextAddLineToPoint(context, maxX, maxY);
+        }
     }
 
     CGContextClosePath(context);
