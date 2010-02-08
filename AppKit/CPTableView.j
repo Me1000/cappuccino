@@ -190,6 +190,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     SEL         _doubleAction;
     unsigned    _columnAutoResizingStyle;
 
+    CGPoint     _originalMouseDownPoint;
     BOOL        _verticalMotionCanDrag;
     unsigned    _destinationDragStyle;
     BOOL        _isSelectingSession;
@@ -219,7 +220,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         _selectionHighlightMask = CPTableViewSelectionHighlightStyleRegular;
 
         [self setUsesAlternatingRowBackgroundColors:NO];
-        [self setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithHexString:@"e4e7ff"]]];
+        [self setAlternatingRowBackgroundColors:[[CPColor whiteColor], /*[CPColor colorWithHexString:@"e4e7ff"]*/ [CPColor colorWithHexString:@"f5f9fc"]]];
 
         _tableColumns = [];
         _tableColumnRanges = [];
@@ -237,7 +238,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         _rowHeight = 23.0;
 
         [self setSelectionHightlightColor:[CPColor selectionColor]];
-        [self setGridColor:[CPColor grayColor]];
+        [self setGridColor:[CPColor colorWithHexString:@"dce0e2"]];
         [self setGridStyleMask:CPTableViewGridNone];
 
         _headerView = [[CPTableHeaderView alloc] initWithFrame:CGRectMake(0, 0, [self bounds].size.width, _rowHeight)];
@@ -523,10 +524,10 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         [self setSelectionHightlightColor:[CPColor selectionColorSourceView]];
         _destinationDragStyle = CPTableViewDraggingDestinationFeedbackStyleSourceList;
     }
-	else
-	{
-	    [self setSelectionHightlightColor:[CPColor selectionColor]];
-	    _destinationDragStyle = CPTableViewDraggingDestinationFeedbackStyleRegular;
+    else
+    {
+        [self setSelectionHightlightColor:[CPColor selectionColor]];
+        _destinationDragStyle = CPTableViewDraggingDestinationFeedbackStyleRegular;
     }
 }
 
@@ -1523,6 +1524,24 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     return _delegate;
 }
 
+- (void)_sendDelegateDidClickColumn:(int)column
+{
+    if (_implementedDelegateMethods & CPTableViewDelegate_tableView_didClickTableColumn_)
+            [_delegate tableView:self didClickTableColumn:_tableColumns[column]];
+}
+
+- (void)_sendDelegateDidDragColumn:(int)column
+{
+    if (_implementedDelegateMethods & CPTableViewDelegate_tableView_didDragTableColumn_)
+            [_delegate tableView:self didDragTableColumn:_tableColumns[column]];
+}
+
+- (void)_sendDelegateDidMouseDownInHeader:(int)column
+{
+    if (_implementedDelegateMethods & CPTableViewDelegate_tableView_mouseDownInHeaderOfTableColumn_)
+            [_delegate tableView:self mouseDownInHeaderOfTableColumn:_tableColumns[column]];
+}
+
 //Highlightable Column Headers
 /*
 - (CPTableColumn)highlightedTableColumn
@@ -1552,63 +1571,63 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 }
 
 - (CPImage)dragImageForRowsWithIndexes:(CPIndexSet)dragRows 
-						  tableColumns:(CPArray)theTableColumns 
-								 event:(CPEvent)dragEvent 
-								offset:(CPPointPointer)dragImageOffset
+                          tableColumns:(CPArray)theTableColumns 
+                                 event:(CPEvent)dragEvent 
+                                offset:(CPPointPointer)dragImageOffset
 {
     return [[CPImage alloc] initWithContentsOfFile:@"Frameworks/AppKit/Resources/GenericFile.png" size:CGSizeMake(32,32)];
 }
 
 - (CPView)dragViewForRowsWithIndexes:(CPIndexSet)theDraggedRows 
-						tableColumns:(CPArray)theTableColumns 
-							   event:(CPEvent)theDragEvent 
-							  offset:(CPPoint)dragViewOffset
+                        tableColumns:(CPArray)theTableColumns 
+                               event:(CPEvent)theDragEvent 
+                              offset:(CPPoint)dragViewOffset
 {
-	var bounds = [self bounds],
-		view = [[CPView alloc] initWithFrame:bounds];
-		
-	[view setBackgroundColor:[CPColor clearColor]];
-	[view setAlphaValue:0.7];
-	
-	// We have to fetch all the data views for the selected rows and columns
-	// After that we can copy these add them to a transparent drag view and use that drag view 
-	// to make it appear we are dragging images of those rows (as you would do in regular Cocoa)
-	var firstExposedColumn = [_exposedColumns firstIndex],
-	    firstExposedRow = [_exposedRows firstIndex],
-		exposedColumnsLength = [_exposedColumns lastIndex] - firstExposedColumn + 1,
-		exposedRowsLength = [_exposedRows lastIndex] - firstExposedRow + 1,
-		columns = [],
-		rows = [];
-		
-	[_exposedColumns getIndexes:columns maxCount:-1 inIndexRange:CPMakeRange(firstExposedColumn, exposedColumnsLength)];
+    var bounds = [self bounds],
+        view = [[CPView alloc] initWithFrame:bounds];
+        
+    [view setBackgroundColor:[CPColor clearColor]];
+    [view setAlphaValue:0.7];
+    
+    // We have to fetch all the data views for the selected rows and columns
+    // After that we can copy these add them to a transparent drag view and use that drag view 
+    // to make it appear we are dragging images of those rows (as you would do in regular Cocoa)
+    var firstExposedColumn = [_exposedColumns firstIndex],
+        firstExposedRow = [_exposedRows firstIndex],
+        exposedColumnsLength = [_exposedColumns lastIndex] - firstExposedColumn + 1,
+        exposedRowsLength = [_exposedRows lastIndex] - firstExposedRow + 1,
+        columns = [],
+        rows = [];
+        
+    [_exposedColumns getIndexes:columns maxCount:-1 inIndexRange:CPMakeRange(firstExposedColumn, exposedColumnsLength)];
     [theDraggedRows getIndexes:rows maxCount:-1 inIndexRange:CPMakeRange(firstExposedRow, exposedRowsLength)];
 
-	var columnIndex = [columns count];
-		
-	while (columnIndex--) 
-	{
-		var column = columns[columnIndex],
-		    tableColumn = [_tableColumns objectAtIndex:column],
-			rowIndex = [rows count];
-		
-		while (rowIndex--)
-		{ 
-		    var row = rows[rowIndex];
-			var dataView = [self _newDataViewForRow:row tableColumn:tableColumn];
-			
-			[dataView setBackgroundColor:[CPColor clearColor]];
-			[dataView setFrame:[self frameOfDataViewAtColumn:column row:row]];
-			[dataView setObjectValue:[self _objectValueForTableColumn:tableColumn row:row]];
-			
-			[view addSubview:dataView];
-		}
-	}
-	
-	var dragPoint = [self convertPoint:[theDragEvent locationInWindow] fromView:nil];
-	dragViewOffset.x = CGRectGetWidth(bounds)/2 - dragPoint.x;
-	dragViewOffset.y = CGRectGetHeight(bounds)/2 - dragPoint.y;
-	
-	return view;
+    var columnIndex = [columns count];
+        
+    while (columnIndex--) 
+    {
+        var column = columns[columnIndex],
+            tableColumn = [_tableColumns objectAtIndex:column],
+            rowIndex = [rows count];
+        
+        while (rowIndex--)
+        { 
+            var row = rows[rowIndex];
+            var dataView = [self _newDataViewForRow:row tableColumn:tableColumn];
+            
+            [dataView setBackgroundColor:[CPColor clearColor]];
+            [dataView setFrame:[self frameOfDataViewAtColumn:column row:row]];
+            [dataView setObjectValue:[self _objectValueForTableColumn:tableColumn row:row]];
+            
+            [view addSubview:dataView];
+        }
+    }
+    
+    var dragPoint = [self convertPoint:[theDragEvent locationInWindow] fromView:nil];
+    dragViewOffset.x = CGRectGetWidth(bounds)/2 - dragPoint.x;
+    dragViewOffset.y = CGRectGetHeight(bounds)/2 - dragPoint.y;
+    
+    return view;
 }
 
 - (void)setDraggingSourceOperationMask:(CPDragOperation)mask forLocal:(BOOL)isLocal
@@ -1898,6 +1917,45 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     }
 }
 
+- (void)_layoutDataViewsInRows:(CPIndexSet)rows columns:(CPIndexSet)columns
+{
+   var rowArray = [],
+        rowRects = [],
+        columnArray = [];
+
+    [rows getIndexes:rowArray maxCount:-1 inIndexRange:nil];
+    [columns getIndexes:columnArray maxCount:-1 inIndexRange:nil];
+
+    UPDATE_COLUMN_RANGES_IF_NECESSARY();
+
+    var columnIndex = 0,
+        columnsCount = columnArray.length;
+
+    for (; columnIndex < columnsCount; ++columnIndex)
+    {        
+        var column = columnArray[columnIndex],
+            tableColumn = _tableColumns[column],
+            tableColumnUID = [tableColumn UID],
+            dataViewsForTableColumn = _dataViewsForTableColumns[tableColumnUID],
+            columnRange = _tableColumnRanges[column];
+            
+        var rowIndex = 0,
+            rowsCount = rowArray.length;            
+
+        for (; rowIndex < rowsCount; ++rowIndex)
+        {
+            var row = rowArray[rowIndex],
+                dataView = dataViewsForTableColumn[row],                
+                frame = [dataView frame];
+            
+            frame.origin.x = columnRange.location;
+            frame.size.width = columnRange.length;
+        
+            [dataView setFrame:frame];
+        }
+    }
+}
+
 - (void)_commitDataViewObjectValue:(CPTextView)sender
 {
     [_dataSource tableView:self
@@ -2104,7 +2162,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         indexes = [],
         rectSelector = @selector(rectOfRow:);
 
-	   [_selectionHightlightColor setFill];
+       [_selectionHightlightColor setFill];
 
 
     if ([_selectedRowIndexes count] >= 1)
@@ -2182,7 +2240,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     }
 
     CGContextClosePath(context);
-    CGContextSetStrokeColor(context, [CPColor whiteColor]);
+    CGContextSetStrokeColor(context, [CPColor colorWithHexString:@"e5e5e5"]);
     CGContextStrokePath(context);
 }
 
@@ -2275,17 +2333,17 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     else
         _selectionAnchorRow = row;
 
+        
+    //set ivars for startTrackingPoint and time...    
+    _startTrackingPoint = aPoint; 
+    _startTrackingTimestamp = new Date();
 
-
-    if (_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_) {
-        _startTrackingPoint = aPoint;
-        _startTrackingTimestamp = new Date();
+    if (_implementedDataSourceMethods & CPTableViewDataSource_tableView_setObjectValue_forTableColumn_row_)
         _trackingPointMovedOutOfClickSlop = NO;
-    }
 
     // if the table has drag support then we use mouseUp to select a single row.
     // otherwise it uses mouse down.
-    if(!(_implementedDataSourceMethods & CPTableViewDataSource_tableView_writeRowsWithIndexes_toPasteboard_))
+    if (!(_implementedDataSourceMethods & CPTableViewDataSource_tableView_writeRowsWithIndexes_toPasteboard_))
         [self _updateSelectionWithMouseAtRow:row];
 
     [[self window] makeFirstResponder:self];
@@ -2297,11 +2355,11 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 */
 - (void)trackMouse:(CPEvent)anEvent
 {
-	// Prevent CPControl from eating the mouse events when we are in a drag session
-	if (![_draggedRowIndexes count])
-		[super trackMouse:anEvent];
-	else
-		[CPApp sendEvent:anEvent];
+    // Prevent CPControl from eating the mouse events when we are in a drag session
+    if (![_draggedRowIndexes count])
+        [super trackMouse:anEvent];
+    else
+        [CPApp sendEvent:anEvent];
 }
 
 /*
@@ -2310,57 +2368,57 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 - (BOOL)continueTracking:(CGPoint)lastPoint at:(CGPoint)aPoint
 {
     var row = [self rowAtPoint:aPoint];
-
     // begin the drag is the datasource lets us, we've move at least +-3px vertical or horizontal, or we're dragging from selected rows and we haven't begun a drag session
-    if
-    (
-        !_isSelectingSession &&
-        (_implementedDataSourceMethods & CPTableViewDataSource_tableView_writeRowsWithIndexes_toPasteboard_) &&
-        (
-            (lastPoint.x - aPoint.x > 3 || (_verticalMotionCanDrag && ABS(lastPoint.y - aPoint.y) > 3))
-            || ([_selectedRowIndexes containsIndex:row])
-        )
-    )
+    if(!_isSelectingSession && _implementedDataSourceMethods & CPTableViewDataSource_tableView_writeRowsWithIndexes_toPasteboard_)
     {
-        if ([_selectedRowIndexes containsIndex:row])
-            _draggedRowIndexes = [[CPIndexSet alloc] initWithIndexSet:_selectedRowIndexes];
-        else
-            _draggedRowIndexes = [CPIndexSet indexSetWithIndex:row];
-
-
-        //ask the datasource for the data
-        var pboard = [CPPasteboard pasteboardWithName:CPDragPboard];
-
-        if ([self canDragRowsWithIndexes:_draggedRowIndexes atPoint:aPoint] && [_dataSource tableView:self writeRowsWithIndexes:_draggedRowIndexes toPasteboard:pboard])
+        if (
+                (ABS(_startTrackingPoint.x - aPoint.x) > 4 || (_verticalMotionCanDrag && ABS(_startTrackingPoint.y - aPoint.y) > 4)) || 
+                ([_selectedRowIndexes containsIndex:row])
+           )
         {
-			var currentEvent = [CPApp currentEvent],
-				offset = CPPointMakeZero(),
-				tableColumns = [_tableColumns objectsAtIndexes:_exposedColumns];
-				
-			// We deviate from the default Cocoa implementation here by asking for a view in stead of an image
-			// We support both, but the view prefered over the image because we can mimic the rows we are dragging
-			// by re-creating the data views for the dragged rows
-			var view = [self dragViewForRowsWithIndexes:_draggedRowIndexes 
-										   tableColumns:tableColumns 
-												  event:currentEvent 
-												 offset:offset];
-			
-			if (!view)
-			{
-				var image = [self dragImageForRowsWithIndexes:_draggedRowIndexes 
-												 tableColumns:tableColumns 
-														event:currentEvent 
-													   offset:offset];
-				view = [[CPImageView alloc] initWithFrame:CPMakeRect(0, 0, [image size].width, [image size].height)];
-				[view setImage:image];
-			}
-			
-			var bounds = [view bounds];
-			var viewLocation = CPPointMake(aPoint.x - CGRectGetWidth(bounds)/2 + offset.x, aPoint.y - CGRectGetHeight(bounds)/2 + offset.y);
-			[self dragView:view at:viewLocation offset:CPPointMakeZero() event:[CPApp currentEvent] pasteboard:pboard source:self slideBack:YES];
-			
-            return NO;
+                if ([_selectedRowIndexes containsIndex:row])
+                    _draggedRowIndexes = [[CPIndexSet alloc] initWithIndexSet:_selectedRowIndexes];
+                else
+                    _draggedRowIndexes = [CPIndexSet indexSetWithIndex:row];
+        
+        
+                //ask the datasource for the data
+                var pboard = [CPPasteboard pasteboardWithName:CPDragPboard];
+        
+                if ([self canDragRowsWithIndexes:_draggedRowIndexes atPoint:aPoint] && [_dataSource tableView:self writeRowsWithIndexes:_draggedRowIndexes toPasteboard:pboard])
+                {
+                    var currentEvent = [CPApp currentEvent],
+                        offset = CPPointMakeZero(),
+                        tableColumns = [_tableColumns objectsAtIndexes:_exposedColumns];
+                        
+                    // We deviate from the default Cocoa implementation here by asking for a view in stead of an image
+                    // We support both, but the view prefered over the image because we can mimic the rows we are dragging
+                    // by re-creating the data views for the dragged rows
+                    var view = [self dragViewForRowsWithIndexes:_draggedRowIndexes 
+                                                   tableColumns:tableColumns 
+                                                          event:currentEvent 
+                                                         offset:offset];
+                    
+                    if (!view)
+                    {
+                        var image = [self dragImageForRowsWithIndexes:_draggedRowIndexes 
+                                                         tableColumns:tableColumns 
+                                                                event:currentEvent 
+                                                               offset:offset];
+                        view = [[CPImageView alloc] initWithFrame:CPMakeRect(0, 0, [image size].width, [image size].height)];
+                        [view setImage:image];
+                    }
+                    
+                    var bounds = [view bounds];
+                    var viewLocation = CPPointMake(aPoint.x - CGRectGetWidth(bounds)/2 + offset.x, aPoint.y - CGRectGetHeight(bounds)/2 + offset.y);
+                    [self dragView:view at:viewLocation offset:CPPointMakeZero() event:[CPApp currentEvent] pasteboard:pboard source:self slideBack:YES];
+                    _startTrackingPoint = nil;
+                    
+                    return NO;
+                }
         }
+        else if (ABS(_startTrackingPoint.x - aPoint.x) < 5 && ABS(_startTrackingPoint.y - aPoint.y) < 5)
+            return YES;
     }
 
     _isSelectingSession = YES;
@@ -2800,10 +2858,8 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
     [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
 
-    if(i)
-    {
+    if(i >= 0)
         [self scrollRowToVisible:i];
-    }
 }
 
 - (void)moveUp:(id)sender
@@ -2814,7 +2870,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 
     var anEvent = [CPApp currentEvent];
     if([[self selectedRowIndexes] count] > 0)
-	{
+    {
          var extend = NO;
     
          if(([anEvent modifierFlags] & CPShiftKeyMask) && _allowsMultipleSelection)
@@ -2849,10 +2905,8 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
     
      [self selectRowIndexes:[CPIndexSet indexSetWithIndex:i] byExtendingSelection:extend];
     
-     if(i)
-     {
+     if(i >= 0)
         [self scrollRowToVisible:i];
-     }
 }
 
 - (void)deleteBackward:(id)sender
