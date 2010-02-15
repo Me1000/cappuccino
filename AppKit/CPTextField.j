@@ -166,7 +166,7 @@ CPThemeStateEditable		= CPThemeState("editable");
 
 + (id)themeAttributes
 {
-    return [CPDictionary dictionaryWithObjects:[_CGInsetMakeZero(), _CGInsetMake(2.0, 2.0, 2.0, 2.0), nil, nil, _CGInsetMakeZero()]
+    return [CPDictionary dictionaryWithObjects:[_CGInsetMakeZero(), _CGInsetMake(2.0, 2.0, 2.0, 2.0), [CPNull null], [CPNull null], _CGInsetMakeZero()]
                                        forKeys:[@"bezel-inset", @"content-inset", @"bezel-color", @"focus-ring-color", @"focus-inset"]];
 }
 
