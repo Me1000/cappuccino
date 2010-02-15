@@ -39,7 +39,7 @@ CPLogRegister(CPLogConsole);
     [tableView setAllowsMultipleSelection:YES];
     [tableView setAllowsColumnSelection:YES];
     [tableView setUsesAlternatingRowBackgroundColors:YES];
-    [tableView setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithHexString:@"e4e7ff"], [CPColor colorWithHexString:@"f4e7ff"]]];
+    [tableView setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithHexString:@"e4e7ff"]]];
     [tableView setGridStyleMask:CPTableViewSolidHorizontalGridLineMask | CPTableViewSolidVerticalGridLineMask];
     [tableView setSelectionHighlightStyle:CPTableViewSelectionHighlightStyleSourceList];
 //    [tableView setBackgroundColor:[CPColor blueColor]];
@@ -85,12 +85,6 @@ CPLogRegister(CPLogConsole);
         [tableView addTableColumn:column];
     }
     
-    //[tableView._tableColumns[1] setSortDescriptorPrototype:desc];
-    
-    //[tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
-
-    // [tableView setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
-
     var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth([view bounds]), CGRectGetHeight([view bounds]))];
     [tableView setRowHeight:22.0];
     [scrollView setDocumentView:tableView];
@@ -103,97 +97,36 @@ CPLogRegister(CPLogConsole);
     [tableView setDelegate:self];
     [tableView setDataSource:self];
     [tableView setVerticalMotionCanBeginDrag:NO];
-    [tableView setDraggingDestinationFeedbackStyle:CPTableViewDropOn];
+    [tableView setDraggingDestinationFeedbackStyle:CPTableViewDraggingDestinationFeedbackStyleSourceList];
     [tableView registerForDraggedTypes:[CPArray arrayWithObject:tableTestDragType]];
     
     //[tableView scrollColumnToVisible:7];
-    //[tableView scrollRowToVisible:100];
-    
+    //[tableView scrollRowToVisible:100];    
     //[tableView sizeLastColumnToFit];
+    
+    tableView2 = [CPKeyedUnarchiver unarchiveObjectWithData:[CPKeyedArchiver archivedDataWithRootObject:tableView]];
+    
     [window1 orderFront:self];
     [self newWindow];
 }
 
 - (void)newWindow
 {
-
     var window2 = [[CPWindow alloc] initWithContentRect:CGRectMake(450, 50, 500, 400) styleMask:CPTitledWindowMask | CPResizableWindowMask];
     
-    tableView2 = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 500.0, 500.0)];//[view bounds]];
-
-    [tableView2 setAllowsMultipleSelection:YES];
-    [tableView2 setUsesAlternatingRowBackgroundColors:YES];
-    [tableView2 setGridStyleMask:CPTableViewSolidHorizontalGridLineMask | CPTableViewSolidVerticalGridLineMask];
-
-//    [tableView setBackgroundColor:[CPColor blueColor]];
-
-    var iconView = [[CPImageView alloc] initWithFrame:CGRectMake(16,16,0,0)];
-
-    [iconView setImageScaling:CPScaleNone];
-
-    var iconColumn = [[CPTableColumn alloc] initWithIdentifier:"icons"];
-
-    [iconColumn setWidth:32.0];
-    [iconColumn setMinWidth:32.0];
-    [iconColumn setDataView:iconView];
-    [iconColumn setResizingMask:CPTableColumnNoResizing];
-
-    [tableView2 addTableColumn:iconColumn];
-
-    iconImage = [[CPImage alloc] initWithContentsOfFile:"http://cappuccino.org/images/favicon.png" size:CGSizeMake(16,16)];
-
-    var textDataView = [CPTextField new];
-//    [textDataView setFrameSize:CGSizeMake(200,32)];
-  //  [textDataView setValue:CGInsetMake(9.0, 7.0, 5.0, 8.0) forThemeAttribute:@"content-inset"];
-    //[textDataView setValue:CGInsetMake(9.0, 7.0, 5.0, 8.0) forThemeAttribute:@"content-inset"];
-    //[textDataView setValue:CGInsetMake(4.0, 4.0, 3.0, 4.0) forThemeAttribute:@"bezel-inset"];
-//    [textDataView setValue:CGInsetMake(2, 0, 0, 0) forThemeAttribute:@"focus-inset"];
-  //  [textDataView setValue:CGInsetMake(0, 0, 0, 0) forThemeAttribute:@"focus-inset" inState:CPThemeStateBezeled|CPThemeStateEditing];
-    
-    [textDataView setValue:[CPColor whiteColor] forThemeAttribute:@"text-color" inState:CPThemeStateHighlighted];
-    [textDataView setValue:[CPFont systemFontOfSize:12] forThemeAttribute:@"font" inState:CPThemeStateHighlighted];
-
-    //[textDataView setValue:CGSizeMake(1,1) forThemeAttribute:@"text-shadow-offset"];
-	//[textDataView setValue:[CPColor blackColor] forThemeAttribute:@"text-shadow-color" inState:CPThemeStateHighlighted];
-
-//    [textDataView setBackgroundColor:[[CPColor redColor] colorWithAlphaComponent:0.5]];
-    var desc = [CPSortDescriptor sortDescriptorWithKey:@"self" ascending:YES];
-
-    for (var i = 1; i <= 3; i++)
-    {
-        var column = [[CPTableColumn alloc] initWithIdentifier:String(i)];
-        [column setSortDescriptorPrototype:desc];
-        [[column headerView] setStringValue:"Number "+i];
-
-        [column setWidth:200.0];
-        [column setMinWidth:50.0];
-
-        [column setDataView:textDataView];
-        [column setEditable:YES];
-        
-        [tableView2 addTableColumn:column];
-    }
-    
-    //[tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
-
     [tableView2 setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
-
-    var scrollView = [[CPScrollView alloc] initWithFrame:[[window2 contentView] bounds]];
+    [tableView2 registerForDraggedTypes:[CPArray arrayWithObject:tableTestDragType]];
     [tableView2 setRowHeight:32.0];
-    [scrollView setDocumentView:tableView2];
-    [scrollView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
-    
-    [[window2 contentView] addSubview:scrollView];
-
-    [scrollView setAutohidesScrollers:YES];
-
     [tableView2 setDelegate:self];
     [tableView2 setDataSource:self];
+    //[tableView2 setDraggingDestinationFeedbackStyle:CPTableViewDropAbove];
+
+    var scrollView = [[CPScrollView alloc] initWithFrame:[[window2 contentView] bounds]];
+    [scrollView setDocumentView:tableView2];
+    [scrollView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    [scrollView setAutohidesScrollers:YES];
     
-    [tableView2 setVerticalMotionCanBeginDrag:NO];
-    [tableView2 registerForDraggedTypes:[CPArray arrayWithObject:tableTestDragType]];
-    [tableView2 setDraggingDestinationFeedbackStyle:CPTableViewDropAbove];
-    
+    [[window2 contentView] addSubview:scrollView];        
     [window2 orderFront:self];
 }
 
@@ -271,24 +204,23 @@ CPLogRegister(CPLogConsole);
 {
     CPLogConsole(_cmd + [notification description]);
 }
-
-//- (CPIndexSet)tableView:(CPTableView)tableView selectionIndexesForProposedSelection:(CPIndexSet)proposedSelectionIndexes
-//{
-//	CPLog.debug(@"selectionIndexesForProposedSelection %@", [proposedSelectionIndexes description]);
-//	return proposedSelectionIndexes;
-//}
-
-
+/*
+- (CPIndexSet)tableView:(CPTableView)tableView selectionIndexesForProposedSelection:(CPIndexSet)proposedSelectionIndexes
+{
+	CPLog.debug(@"selectionIndexesForProposedSelection %@", [proposedSelectionIndexes description]);
+	return proposedSelectionIndexes;
+}
+*/
 - (BOOL)tableView:(CPTableView)aTableView shouldEditTableColumn:(CPTableColumn)tableColumn row:(int)row
 {
     return NO;
 }
-
+/*
 - (void)tableView:(CPTableView)aTableView willDisplayView:(CPView)aView forTableColumn:(CPTableColumn)tableColumn row:(int)row
 {
     CPLogConsole(_cmd + " column: " + [tableColumn identifier] + " row:" + row)    
 }
-
+*/
 - (void)tableView:(CPTableView)aTableView setObjectValue:(id)aValue forTableColumn:(CPTableColumn)tableColumn row:(int)row
 {
     

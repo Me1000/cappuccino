@@ -232,7 +232,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
         _selectionHighlightStyle = CPTableViewSelectionHighlightStyleRegular;
 
         [self setUsesAlternatingRowBackgroundColors:NO];
-        [self setAlternatingRowBackgroundColors:[[CPColor whiteColor], /*[CPColor colorWithHexString:@"e4e7ff"]*/ [CPColor colorWithHexString:@"f5f9fc"]]];
+        [self setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithHexString:@"f5f9fc"]]];
 
         _tableColumns = [];
         _tableColumnRanges = [];
@@ -3101,6 +3101,7 @@ CPTableViewFirstColumnOnlyAutoresizingStyle = 5;
 var CPTableViewDataSourceKey                = @"CPTableViewDataSourceKey",
     CPTableViewDelegateKey                  = @"CPTableViewDelegateKey",
     CPTableViewHeaderViewKey                = @"CPTableViewHeaderViewKey",
+    CPTableViewCornerViewKey                = @"CPTableViewCornerViewKey",
     CPTableViewTableColumnsKey              = @"CPTableViewTableColumnsKey",
     CPTableViewRowHeightKey                 = @"CPTableViewRowHeightKey",
     CPTableViewIntercellSpacingKey          = @"CPTableViewIntercellSpacingKey",
@@ -3110,9 +3111,14 @@ var CPTableViewDataSourceKey                = @"CPTableViewDataSourceKey",
     CPTableViewColumnResizingKey            = @"CPTableViewColumnResizingKey",
     CPTableViewColumnSelectionKey           = @"CPTableViewColumnSelectionKey",
     CPTableViewGridColorKey                 = @"CPTableViewGridColorKey",
-    CPTableViewGridStyleMaskKey             = @"CPTableViewGridStyleMaskKey",
+    CPTableViewGridStyleMaskKey             = @"CPGridStyleMaskKey",
     CPTableViewUsesAlternatingBackgroundKey = @"CPTableViewUsesAlternatingBackgroundKey",
-    CPTableViewSelectionHighlightStyleKey   = @"CPTableViewSelectionHighlightStyleKey";
+    CPTableViewAlternatingRowBackgroundColorsKey = @"CPTableViewAlternatingRowBackgroundColorsKey",
+    CPTableViewSelectionHighlightStyleKey   = @"CPTableViewSelectionHighlightStyleKey",
+    CPTableViewVerticalMotionCanBeginDragKey = @"CPTableViewVerticalMotionCanBeginDragKey",
+    CPTableViewDraggingDestinationFeedbackStyleKey = @"CPTableViewDraggingDestinationFeedbackStyleKey",
+    CPTableViewSortDescriptorsKey           = @"CPTableViewSortDescriptorsKey",
+    CPTableViewColumnAutoresizingStyleKey   = @"CPTableViewColumnAutoresizingStyleKey";
 
 @implementation CPTableView (CPCoding)
 
@@ -3132,14 +3138,17 @@ var CPTableViewDataSourceKey                = @"CPTableViewDataSourceKey",
         _tableViewFlags = 0;
 
         //Setting Display Attributes
-        _selectionHighlightStyle = [aCoder decodeIntForKey:CPTableViewSelectionHighlightStyleKey];
-
+        _destinationDragStyle = [aCoder decodeIntForKey:CPTableViewDraggingDestinationFeedbackStyleKey];
+        [self setSelectionHighlightStyle:[aCoder decodeIntForKey:CPTableViewSelectionHighlightStyleKey]];
+    
         _usesAlternatingRowBackgroundColors = [aCoder decodeBoolForKey:CPTableViewUsesAlternatingBackgroundKey];
-        [self setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithHexString:@"e4e7ff"]]];
+        _alternatingRowBackgroundColors = [aCoder decodeObjectForKey:CPTableViewAlternatingRowBackgroundColorsKey];
 
         _tableColumns = [aCoder decodeObjectForKey:CPTableViewTableColumnsKey];
         [_tableColumns makeObjectsPerformSelector:@selector(setTableView:) withObject:self];
-
+        
+        _columnAutoResizingStyle = [aCoder decodeIntForKey:CPTableViewColumnAutoresizingStyleKey];
+        
         _tableColumnRanges = [];
         _dirtyTableColumnRangeIndex = 0;
         _numberOfHiddenColumns = 0;
@@ -3160,23 +3169,35 @@ var CPTableViewDataSourceKey                = @"CPTableViewDataSourceKey",
         
         _gridColor = [aCoder decodeObjectForKey:CPTableViewGridColorKey] || [CPColor grayColor];
         _gridStyleMask = [aCoder decodeIntForKey:CPTableViewGridStyleMaskKey] || CPTableViewGridNone;
-        
-        _headerView = [[CPTableHeaderView alloc] initWithFrame:CGRectMake(0, 0, [self bounds].size.width, _rowHeight)];
 
+        _headerView = [aCoder decodeObjectForKey:CPTableViewHeaderViewKey];
         [_headerView setTableView:self];
-
-        _cornerView = [[_CPCornerView alloc] initWithFrame:CGRectMake(0, 0, [CPScroller scrollerWidth], CGRectGetHeight([_headerView frame]))];
+        
+        _cornerView = [aCoder decodeObjectForKey:CPTableViewCornerViewKey];
 
         _selectedColumnIndexes = [CPIndexSet indexSet];
         _selectedRowIndexes = [CPIndexSet indexSet];
 
-        [self setDataSource:[aCoder decodeObjectForKey:CPTableViewDataSourceKey]];
-        [self setDelegate:[aCoder decodeObjectForKey:CPTableViewDelegateKey]];
+//        [self setDataSource:[aCoder decodeObjectForKey:CPTableViewDataSourceKey]];
+//        [self setDelegate:[aCoder decodeObjectForKey:CPTableViewDelegateKey]];
+
+        _sortDescriptors = [aCoder decodeObjectForKey:CPTableViewSortDescriptorsKey];
+
+        _draggedRowIndexes = [CPIndexSet indexSet];
+        _verticalMotionCanDrag = [aCoder decodeBoolForKey:CPTableViewVerticalMotionCanBeginDragKey];
+        _isSelectingSession = NO;
+        _retargetedDropRow = nil;
+        _retargetedDropOperation = nil;
+        _dragOperationDefaultMask = nil;
+        _dropOperationFeedbackView = [[_dropOperationDrawingView alloc] initWithFrame:_CGRectMakeZero()];
+        [self addSubview:_dropOperationFeedbackView];
+        [_dropOperationFeedbackView setHidden:YES];
+        [_dropOperationFeedbackView setTableView:self];
 
         _tableDrawView = [[_CPTableDrawView alloc] initWithTableView:self];
         [_tableDrawView setBackgroundColor:[CPColor clearColor]];
         [self addSubview:_tableDrawView];
-
+        
         [self viewWillMoveToSuperview:[self superview]];
     }
 
@@ -3187,26 +3208,31 @@ var CPTableViewDataSourceKey                = @"CPTableViewDataSourceKey",
 {
     [super encodeWithCoder:aCoder];
 
-    [aCoder encodeObject:_dataSource forKey:CPTableViewDataSourceKey];
-    [aCoder encodeObject:_delegate forKey:CPTableViewDelegateKey];
+//    [aCoder encodeObject:_dataSource forKey:CPTableViewDataSourceKey];
+//    [aCoder encodeObject:_delegate forKey:CPTableViewDelegateKey];
 
     [aCoder encodeFloat:_rowHeight forKey:CPTableViewRowHeightKey];
     [aCoder encodeSize:_intercellSpacing forKey:CPTableViewIntercellSpacingKey];
-    [aCoder encodeInt:_gridStyleMask forKey:CPGridStyleMask];
     
     [aCoder encodeBool:_allowsMultipleSelection forKey:CPTableViewMultipleSelectionKey];
     [aCoder encodeBool:_allowsEmptySelection forKey:CPTableViewEmptySelectionKey];
     [aCoder encodeBool:_allowsColumnReordering forKey:CPTableViewColumnReorderingKey];
     [aCoder encodeBool:_allowsColumnResizing forKey:CPTableViewColumnResizingKey];
     [aCoder encodeBool:_allowsColumnSelection forKey:CPTableViewColumnSelectionKey];
+    [aCoder encodeBool:_verticalMotionCanDrag forKey:CPTableViewVerticalMotionCanBeginDragKey];
+    [aCoder encodeBool:_usesAlternatingRowBackgroundColors forKey:CPTableViewUsesAlternatingBackgroundKey];
 
     [aCoder encodeObject:_tableColumns forKey:CPTableViewTableColumnsKey];
-    
+    [aCoder encodeObject:_headerView forKey:CPTableViewHeaderViewKey];
+    [aCoder encodeObject:_cornerView forKey:CPTableViewCornerViewKey];
+    [aCoder encodeObject:_sortDescriptors forKey:CPTableViewSortDescriptorsKey];
     [aCoder encodeObject:_gridColor forKey:CPTableViewGridColorKey];
-    [aCoder encodeInt:_gridStyleMask forKey:CPTableViewGridStyleMaskKey];
+    [aCoder encodeObject:_alternatingRowBackgroundColors forKey:CPTableViewAlternatingRowBackgroundColorsKey];
     
-    [aCoder encodeBool:_usesAlternatingRowBackgroundColors forKey:CPTableViewUsesAlternatingBackgroundKey];
-    [aCoder encodeInt:_selectionHighlightStyle forkey:CPTableViewSelectionHighlightStyleKey];
+    [aCoder encodeInt:_selectionHighlightStyle forKey:CPTableViewSelectionHighlightStyleKey];
+    [aCoder encodeInt:_destinationDragStyle forKey:CPTableViewDraggingDestinationFeedbackStyleKey];
+    [aCoder encodeInt:_gridStyleMask forKey:CPTableViewGridStyleMaskKey];
+    [aCoder encodeInt:_columnAutoResizingStyle forKey:CPTableViewColumnAutoresizingStyleKey];
 }
 
 @end

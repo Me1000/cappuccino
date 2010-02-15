@@ -149,3 +149,30 @@ CPOrderedDescending     =  1;
 }
 
 @end
+
+var CPSortDescriptorKeyKey = @"CPSortDescriptorKeyKey",
+    CPSortDescriptorSelectorKey = @"CPSortDescriptorSelectorKey",
+    CPSortDescriptorAscendingKey = @"CPSortDescriptorAscendingKey";
+
+@implementation CPSortDescriptor (CPCoding)
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{ 
+    [aCoder encodeObject:_key forKey:CPSortDescriptorKeyKey];
+    [aCoder encodeObject:CPStringFromSelector(_selector) forKey:CPSortDescriptorSelectorKey];
+    [aCoder encodeBool:_ascending forKey:CPSortDescriptorAscendingKey];    
+}
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super init];
+    if (self)
+    {
+        _key = [aCoder decodeObjectForKey:CPSortDescriptorKeyKey];
+        _selector = CPSelectorFromString([aCoder decodeObjectForKey:CPSortDescriptorSelectorKey]);
+        _ascending = [aCoder decodeBoolForKey:CPSortDescriptorAscendingKey]
+    }
+    
+    return self;
+}
+@end
