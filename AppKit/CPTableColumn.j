@@ -387,7 +387,10 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
     CPTableColumnWidthKey        = @"CPTableColumnWidthKey",
     CPTableColumnMinWidthKey     = @"CPTableColumnMinWidthKey",
     CPTableColumnMaxWidthKey     = @"CPTableColumnMaxWidthKey",
-    CPTableColumnResizingMaskKey = @"CPTableColumnResizingMaskKey";
+    CPTableColumnResizingMaskKey = @"CPTableColumnResizingMaskKey",
+    CPTableColumnSortDescriptorKey = @"CPTableColumnSortDescriptorKey",
+    CPTableColumnIsEditableKey   = @"CPTableColumnIsEditableKey",
+    CPTableColumnIsHiddenKey     = @"CPTableColumnIsHiddenKey";
 
 @implementation CPTableColumn (CPCoding)
 
@@ -398,20 +401,21 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
     if (self)
     {
         _dataViewData = { };
+        _disableResizingPosting = NO;
+        
+        [self setIdentifier:[aCoder decodeObjectForKey:CPTableColumnIdentifierKey]];
+        [self setHeaderView:[aCoder decodeObjectForKey:CPTableColumnHeaderViewKey]];
+        [self setDataView:[aCoder decodeObjectForKey:CPTableColumnDataViewKey]];
 
         _width = [aCoder decodeFloatForKey:CPTableColumnWidthKey];
         _minWidth = [aCoder decodeFloatForKey:CPTableColumnMinWidthKey];
         _maxWidth = [aCoder decodeFloatForKey:CPTableColumnMaxWidthKey];
+        
+        _sortDescriptorPrototype = [aCoder decodeObjectForKey:CPTableColumnSortDescriptorKey];
 
-        [self setIdentifier:[aCoder decodeObjectForKey:CPTableColumnIdentifierKey]];
-    //    [self setHeaderView:[aCoder decodeObjectForKey:CPTableColumnHeaderViewKey]];
-    //    [self setDataView:[aCoder decodeObjectForKey:CPTableColumnDataViewKey]];
-
-        [self setHeaderView:[CPTextField new]];
-        [self setDataView:[CPTextField new]];
-
-
-    //    _resizingMask  = [aCoder decodeBoolForKey:CPTableColumnResizingMaskKey];
+        _resizingMask  = [aCoder decodeIntForKey:CPTableColumnResizingMaskKey];
+        _isEditable = [aCoder decodeBoolForKey:CPTableColumnIsEditableKey];
+        _isHidden = [aCoder decodeBoolForKey:CPTableColumnIsHiddenKey];
     }
 
     return self;
@@ -420,15 +424,18 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
 - (void)encodeWithCoder:(CPCoder)aCoder
 {
     [aCoder encodeObject:_identifier forKey:CPTableColumnIdentifierKey];
+    [aCoder encodeObject:_headerView forKey:CPTableColumnHeaderViewKey];
+    [aCoder encodeObject:_dataView forKey:CPTableColumnDataViewKey];
 
     [aCoder encodeObject:_width forKey:CPTableColumnWidthKey];
     [aCoder encodeObject:_minWidth forKey:CPTableColumnMinWidthKey];
     [aCoder encodeObject:_maxWidth forKey:CPTableColumnMaxWidthKey];
+    
+    [aCoder encodeObject:_sortDescriptorPrototype forKey:CPTableColumnSortDescriptorKey];
 
-//    [aCoder encodeObject:_headerView forKey:CPTableColumnHeaderViewKey];
-//    [aCoder encodeObject:_dataView forKey:CPTableColumnDataViewKey];
-
-//    [aCoder encodeObject:_resizingMask forKey:CPTableColumnResizingMaskKey];
+    [aCoder encodeInt:_resizingMask forKey:CPTableColumnResizingMaskKey];    
+    [aCoder encodeBool:_isEditable forKey:CPTableColumnIsEditableKey];
+    [aCoder encodeBool:_isHidden forKey:CPTableColumnIsHiddenKey];
 }
 
 @end
@@ -438,25 +445,25 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
 - (void)setHeaderCell:(CPView)aView
 {
     [CPException raise:CPUnsupportedMethodException
-                reason:@"setHeaderCell: is not supported. -setHeaderCell:aView instead."];
+                reason:@"setHeaderCell: is not supported. Use -setHeaderView:aView instead."];
 }
 
 - (CPView)headerCell
 {
     [CPException raise:CPUnsupportedMethodException
-                reason:@"headCell is not supported. -headerView instead."];
+                reason:@"headCell is not supported. Use -headerView instead."];
 }
 
 - (void)setDataCell:(CPView)aView
 {
     [CPException raise:CPUnsupportedMethodException
-                reason:@"setDataCell: is not supported. Use -setHeaderCell:aView instead."];
+                reason:@"setDataCell: is not supported. Use -setHeaderView:aView instead."];
 }
 
 - (CPView)dataCell
 {
     [CPException raise:CPUnsupportedMethodException
-                reason:@"dataCell is not supported. Use -dataCell instead."];
+                reason:@"dataCell is not supported. Use -dataView instead."];
 }
 
 - (id)dataCellForRow:(int)row

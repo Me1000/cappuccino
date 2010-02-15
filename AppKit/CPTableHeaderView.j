@@ -106,6 +106,31 @@ var CPThemeStatePressed = CPThemeState("pressed");
 
 @end
 
+var CPTableColumnHeaderViewTextFieldKey = @"CPTableColumnHeaderViewTextFieldKey",
+    CPTableColumnHeaderViewTextKey = @"CPTableColumnHeaderViewTextKey";
+    
+@implementation _CPTableColumnHeaderView (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [self initWithFrame:CGRectMakeZero()];
+
+    if (self)
+    {
+        [_textField setText:[aCoder decodeObjectForKey:CPTableColumnHeaderViewTextKey]];
+        [self addSubview:_textField];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [aCoder encodeInt:[_textField text] forKey:CPTableColumnHeaderViewTextKey];    
+}
+
+@end
+
 @implementation CPTableHeaderView : CPView
 {
     int _resizedColumn @accessors(readonly, property=resizedColumn);
@@ -130,7 +155,7 @@ var CPThemeStatePressed = CPThemeState("pressed");
         _pressedColumn = -1;
         _draggedDistance = 0.0;
         _lastLocation = nil;
-        _columnOldWidth = nil;
+        _columnOldWidth = CPNotFound;
         
         [self setBackgroundColor:[CPColor colorWithPatternImage:CPAppKitImage("tableview-headerview.png", CGSizeMake(1.0, 22.0))]];
     }
@@ -255,7 +280,7 @@ var CPThemeStatePressed = CPThemeState("pressed");
         type = [anEvent type];
 
     if (_lastLocation == nil) _lastLocation = location;
-    if (_columnOldWidth == nil) _columnOldWidth = [tableColumn width];
+    if (_columnOldWidth == CPNotFound) _columnOldWidth = [tableColumn width];
         
     if (type === CPLeftMouseUp)
     {   
