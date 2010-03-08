@@ -20,36 +20,58 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-var FileExecutableUnloadedDependencies  = 0,
-    FileExecutableLoadingDependencies   = 1,
-    FileExecutableLoadedDependencies    = 2,
-    FileExecutablesForPaths             = { };
+var FileExecutablesForURLStrings = { };
 
-function FileExecutable(/*String*/ aPath)
+function FileExecutable(/*CFURL|String*/ aURL, /*Executable*/ anExecutable)
 {
-    var existingFileExecutable = FileExecutablesForPaths[aPath];
+    aURL = makeAbsoluteURL(aURL);
+
+    var URLString = aURL.absoluteString(),
+        existingFileExecutable = FileExecutablesForURLStrings[URLString];
 
     if (existingFileExecutable)
         return existingFileExecutable;
 
-    FileExecutablesForPaths[aPath] = this;
+    FileExecutablesForURLStrings[URLString] = this;
 
-    var fileContents = rootResource.nodeAtSubPath(aPath).contents(),
-        executable = NULL;
+    var fileContents = StaticResource.resourceAtURL(aURL).contents(),
+        executable = NULL,
+        extension = aURL.pathExtension();
 
-    if (!fileContents.match(/^@STATIC;/))
-        executable = preprocess(fileContents, aPath, OBJJ_PREPROCESSOR_DEBUG_SYMBOLS);
+    if (anExecutable)
+        executable = anExecutable;
+
+    else if (fileContents.match(/^@STATIC;/))
+        executable = decompile(fileContents, aURL);
+
+    else if (extension === "j" || !extension)
+        executable = exports.preprocess(fileContents, aURL, Preprocessor.Flags.IncludeDebugSymbols);
 
     else
-        executable = decompile(fileContents, aPath);
+        executable = new Executable(fileContents, [], aURL);
 
-    Executable.apply(this, [executable.code(), executable.fileDependencies(), aPath, executable._function]);
+    Executable.apply(this, [executable.code(), executable.fileDependencies(), aURL, executable._function]);
 
-    this._path = aPath;
     this._hasExecuted = NO;
 }
 
+exports.FileExecutable = FileExecutable;
+
 FileExecutable.prototype = new Executable();
+
+#ifdef COMMONJS
+FileExecutable.allFileExecutables = function()
+{
+    var URLString,
+        fileExecutables = [];
+
+    for (URLString in FileExecutablesForURLStrings)
+        if (hasOwnProperty.call(FileExecutablesForURLStrings, URLString))
+            fileExecutables.push(FileExecutablesForURLStrings[URLString]);
+
+    return fileExecutables;
+}
+#endif
 
 FileExecutable.prototype.execute = function(/*BOOL*/ shouldForce)
 {
@@ -58,20 +80,19 @@ FileExecutable.prototype.execute = function(/*BOOL*/ shouldForce)
 
     this._hasExecuted = YES;
 
-    Executable.prototype.execute.apply(this, []);
+    Executable.prototype.execute.call(this);
 }
 
-FileExecutable.prototype.path = function()
-{
-    return this._path;
-}
+DISPLAY_NAME(FileExecutable.prototype.execute);
 
 FileExecutable.prototype.hasExecuted = function()
 {
     return this._hasExecuted;
 }
 
-function decompile(/*String*/ aString, /*String*/ aPath)
+DISPLAY_NAME(FileExecutable.prototype.hasExecuted);
+
+function decompile(/*String*/ aString, /*CFURL*/ aURL)
 {
     var stream = new MarkedStream(aString);
 /*
@@ -90,18 +111,11 @@ function decompile(/*String*/ aString, /*String*/ aPath)
             code += text;
 
         else if (marker === MARKER_IMPORT_STD)
-            dependencies.push(new FileDependency(FILE.normal(text), NO));
+            dependencies.push(new FileDependency(new CFURL(text), NO));
 
         else if (marker === MARKER_IMPORT_LOCAL)
-            dependencies.push(new FileDependency(FILE.normal(text), YES));
+            dependencies.push(new FileDependency(new CFURL(text), YES));
     }
 
-    return new Executable(code, dependencies, aPath);
+    return new Executable(code, dependencies, aURL);
 }
-/*
-global.objj_executeFile = executeFile;
-global.objj_importFile = importFile;
-global.objj_import = importFile;
-*/
-exports.FileExecutable = FileExecutable;
-exports.FileExecutablesForPaths = FileExecutablesForPaths;

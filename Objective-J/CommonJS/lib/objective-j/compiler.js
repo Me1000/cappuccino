@@ -5,50 +5,37 @@ var FILE = require("file"),
 
 require("objective-j/rhino/regexp-rhino-patch");
 
-var OBJJ_PREPROCESSOR_DEBUG_SYMBOLS   = exports.OBJJ_PREPROCESSOR_DEBUG_SYMBOLS   = ObjectiveJ.OBJJ_PREPROCESSOR_DEBUG_SYMBOLS;
-var OBJJ_PREPROCESSOR_TYPE_SIGNATURES = exports.OBJJ_PREPROCESSOR_TYPE_SIGNATURES = ObjectiveJ.OBJJ_PREPROCESSOR_TYPE_SIGNATURES;
-var OBJJ_PREPROCESSOR_PREPROCESS      = exports.OBJJ_PREPROCESSOR_PREPROCESS      = 1 << 10;
-var OBJJ_PREPROCESSOR_COMPRESS        = exports.OBJJ_PREPROCESSOR_COMPRESS        = 1 << 11;
-var OBJJ_PREPROCESSOR_SYNTAX          = exports.OBJJ_PREPROCESSOR_SYNTAX          = 1 << 12;
+ObjectiveJ.Preprocessor.Flags.Preprocess   = 1 << 10;
+ObjectiveJ.Preprocessor.Flags.Compress     = 1 << 11;
+ObjectiveJ.Preprocessor.Flags.CheckSyntax  = 1 << 12;
 
-var SHRINKSAFE_PATH = FILE.join(ObjectiveJ.OBJJ_HOME, "shrinksafe", "shrinksafe.jar"),
-    RHINO_PATH = FILE.join(ObjectiveJ.OBJJ_HOME, "shrinksafe", "js.jar");
-
-var compressor = null;
-
-function sharedCompressor()
-{
-    if (!compressor)
-        compressor = OS.popen("java -server -Dfile.encoding=UTF-8 -classpath " + RHINO_PATH + ":" +  SHRINKSAFE_PATH + " org.dojotoolkit.shrinksafe.Main", { charset:"UTF-8" });
-
-    return compressor;
-}
-
-function compress(/*String*/ aCode, /*String*/ FIXME)
-{
-    var tmpFile = FILE.join("/tmp", FIXME + Math.random() + ".tmp");
-
-    FILE.write(tmpFile, aCode, { charset:"UTF-8" });
-
-    var compressor = sharedCompressor();
-        output = "",
-        chunk = "";
-
-    compressor.stdin.write(tmpFile + "\n");
-    compressor.stdin.flush();
-
-    while ((chunk = compressor.stdout.readLine()) !== "/*----*/\n")
-        output += chunk;
-
-    return output;
-//    return OS.command(["java", "-Dfile.encoding=UTF-8", "-classpath", [RHINO_PATH, SHRINKSAFE_PATH].join(":"), "org.dojotoolkit.shrinksafe.Main", tmpFile]);
+var compressors = {
+    ss  : { id : "minify/shrinksafe" }
+    //,yui : { id : "minify/yuicompressor" }
+    // ,cc  : { id : "minify/closure-compiler" }
+};
+var compressorStats = {};
+function compressor(code) {
+    var winner, winnerName;
+    compressorStats['original'] = (compressorStats['original'] || 0) + code.length;
+    for (var name in compressors) {
+        var compressor = require(compressors[name].id);
+        var result = compressor.compress(code, { charset : "UTF-8", useServer : true });
+        compressorStats[name] = (compressorStats[name] || 0) + result.length;
+        if (!winner || result < winner.length) {
+            winner = result;
+            winnerName = name;
+        }
+    }
+    // print("winner="+winnerName+" compressorStats="+JSON.stringify(compressorStats));
+    return winner;
 }
 
 function compileWithResolvedFlags(aFilePath, objjcFlags, gccFlags)
 {
-    var shouldObjjPreprocess = objjcFlags & OBJJ_PREPROCESSOR_PREPROCESS,
-        shouldCheckSyntax = objjcFlags & OBJJ_PREPROCESSOR_SYNTAX,
-        shouldCompress = objjcFlags & OBJJ_PREPROCESSOR_COMPRESS,
+    var shouldObjjPreprocess = objjcFlags & ObjectiveJ.Preprocessor.Flags.Preprocess,
+        shouldCheckSyntax = objjcFlags & ObjectiveJ.Preprocessor.Flags.CheckSyntax,
+        shouldCompress = objjcFlags & ObjectiveJ.Preprocessor.Flags.Compress,
         fileContents = "";
 
     if (OS.popen("which gcc").stdout.read().length === 0)
@@ -90,7 +77,7 @@ function compileWithResolvedFlags(aFilePath, objjcFlags, gccFlags)
     if (shouldCompress)
     {
         var code = executable.code();
-        code = compress("function(){" + code + "}", FILE.basename(aFilePath));
+        code = compressor("function(){" + code + "}");
         // more robust function wrapper stripping
         code = code.replace(/^\s*function\s*\(\s*\)\s*{|}\s*;?\s*$/g, "");
         executable.setCode(code);
@@ -108,7 +95,7 @@ function resolveFlags(args)
         count = args.length,
 
         gccFlags = [],
-        objjcFlags = OBJJ_PREPROCESSOR_PREPROCESS | OBJJ_PREPROCESSOR_SYNTAX;    
+        objjcFlags = ObjectiveJ.Preprocessor.Flags.Preprocess | ObjectiveJ.Preprocessor.Flags.CheckSyntax;
 
     for (; index < count; ++index)
     {
@@ -127,16 +114,16 @@ function resolveFlags(args)
             gccFlags.push(argument);
             
         else if (argument.indexOf("-E") === 0)
-            objjcFlags &= ~OBJJ_PREPROCESSOR_PREPROCESS;
+            objjcFlags &= ~ObjectiveJ.Preprocessor.Flags.Preprocess;
             
         else if (argument.indexOf("-S") === 0)
-            objjcFlags &= ~OBJJ_PREPROCESSOR_SYNTAX;
+            objjcFlags &= ~ObjectiveJ.Preprocessor.Flags.CheckSyntax;
             
         else if (argument.indexOf("-g") === 0)
-            objjcFlags |= OBJJ_PREPROCESSOR_DEBUG_SYMBOLS;
+            objjcFlags |= ObjectiveJ.Preprocessor.Flags.IncludeDebugSymbols;
             
         else if (argument.indexOf("-O") === 0)
-            objjcFlags |= OBJJ_PREPROCESSOR_COMPRESS;
+            objjcFlags |= ObjectiveJ.Preprocessor.Flags.Compress;
 
         else
             filePaths.push(argument);

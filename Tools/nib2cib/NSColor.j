@@ -24,7 +24,8 @@
  */
 
 @import <AppKit/CPColor.j>
- 
+@import <AppKit/CPData.j>
+
 var NSUnknownColorSpaceModel    = -1,
     NSGrayColorSpaceModel       = 0,
     NSRGBColorSpaceModel        = 1,
@@ -49,14 +50,12 @@ var NSUnknownColorSpaceModel    = -1,
             // NSComponents data
             // NSCustomColorSpace NSColorSpace
             var rgb         = [aCoder decodeBytesForKey:@"NSRGB"],
-                string      = bytes_to_string(rgb),
+                string      = CFData.bytesToString(rgb),
                 components  = [string componentsSeparatedByString:@" "],
                 values      = [0,0,0,1];
 
             for (var i = 0; i < components.length && i < 4; i++)
                 values[i] = [components[i] floatValue];
-            
-            CPLog.warn("rgb="+rgb+" string=" + string + " values=" + values);
 
             result = [CPColor colorWithCalibratedRed:values[0] green:values[1] blue:values[2] alpha:values[3]];
             break;
@@ -65,7 +64,7 @@ var NSUnknownColorSpaceModel    = -1,
         case 4: // [NSColor colorWithDeviceWhite:values[0] alpha:values[1]];
         
             var bytes       = [aCoder decodeBytesForKey:@"NSWhite"],
-                string      = bytes_to_string(bytes),
+                string      = CFData.bytesToString(bytes),
                 components  = [string componentsSeparatedByString:@" "],
                 values      = [0,1];
                 
@@ -77,7 +76,7 @@ var NSUnknownColorSpaceModel    = -1,
 /*
         case 5:
             var cmyk        = [aCoder decodeBytesForKey:@"NSCMYK"],
-                string      = bytes_to_string(rgb),
+                string      = CFData.bytesToString(rgb),
                 components  = [string componentsSeparatedByString:@" "],
                 values      = [0,0,0,0,1];
             

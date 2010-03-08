@@ -20,18 +20,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+require("../common.jake");
+
 var FILE = require("file"),
     OS = require("os"),
     stream = require("term").stream;
 
-require("../common.jake");
 //$BUILD_CONFIGURATION_DIR = "../Build"
 $BROWSER_FILE       = FILE.join("Browser", "Objective-J.js");
 
 $BUILD_OBJECTIVE_J  = FILE.join($BUILD_CONFIGURATION_DIR, "Objective-J");
 $BUILD_BROWSER_FILE = FILE.join($BUILD_OBJECTIVE_J, "Objective-J.js");
 
-$INCLUDE_FLAGS      = " -I" + FILE.cwd();
+$INCLUDE_FLAGS      = ["-I" + FILE.cwd()];
+$DEBUG_FLAGS        = $CONFIGURATION === "Debug" ? ["-DDEBUG=1"] : [""];
 $OBJECTIVEJ_FILES   = new FileList("*.js");
 
 $BROWSER_FILES      = new FileList($BROWSER_FILE).include($OBJECTIVEJ_FILES);
@@ -40,7 +42,7 @@ filedir($BUILD_BROWSER_FILE, $BROWSER_FILES, function(aTask)
 {
     gcc($BROWSER_FILE, 
         $BUILD_BROWSER_FILE, 
-        environmentFlags("Browser", "ObjJ") + $INCLUDE_FLAGS, $CONFIGURATION !== "Debug");
+        environmentFlags("Browser", "ObjJ").concat($INCLUDE_FLAGS, $DEBUG_FLAGS), $CONFIGURATION !== "Debug");
 });
 
 $LICENSE        = FILE.join("CommonJS", "lib", "objective-j", "jake", "LICENSES", "LGPL-v2.1");
@@ -69,9 +71,10 @@ new FileList("CommonJS/**/*").forEach(function(aFilename)
         else
             gcc(aFilename,
                 buildFilename,
-                environmentFlags("CommonJS", "ObjJ") + $INCLUDE_FLAGS, false);
+                environmentFlags("CommonJS", "ObjJ").concat($INCLUDE_FLAGS, $DEBUG_FLAGS), false);
     });
-        
+
+    // HACK: narwhal should copy permissions
     if (FILE.dirname(aFilename) === FILE.join("CommonJS", "bin"))
     {
         filedir (buildFilename, function ()
@@ -95,13 +98,16 @@ CLOBBER.include($BUILD_OBJECTIVE_J);
 
 function environmentFlags()
 {
-    return Array.prototype.map.apply(arguments, [function(anEnvironment)
-    {
+    var environments = Array.prototype.slice.call(arguments)
+
+    return environments.map(function(anEnvironment) {
         return "-D" + anEnvironment.toUpperCase();
-    }]).join(" ") +
-    " -DENVIRONMENTS=\"[" + Array.prototype.map.apply(arguments, [function(anEnvironment) {
-        return "\\\"" + anEnvironment + "\\\"";
-    }]).join(", ") + "]\"";
+    }).concat("-DENVIRONMENTS=" + JSON.stringify(environments));
+}
+
+var SHRINKSAFE = require("minify/shrinksafe");
+function compressor(code) {
+    return SHRINKSAFE.compress(code, { charset : "UTF-16", useServer : true });
 }
 
 function gcc(inputFilePath, outputFilePath, flags, compress)
@@ -109,30 +115,16 @@ function gcc(inputFilePath, outputFilePath, flags, compress)
     stream.print("Building... \0green(" + outputFilePath +"\0)");
 
     // GCC preprocess the file.
-    var gcc = OS.popen("gcc -E -x c -P " + flags + " " + inputFilePath, { charset:"UTF-8" }),
-        gccFilePath = FILE.join("", "tmp", "objj-gcc.js"),
-        chunk = null,
-        fileContents = FILE.read("header.txt", { charset : "UTF-8" });
+    var cmd = ["gcc", "-E", "-x", "c", "-P"].concat(flags, inputFilePath);
+    var gcc = OS.popen(cmd, { charset:"UTF-8" });
 
-    while (chunk = gcc.stdout.read())
-        fileContents += chunk;
-
-    FILE.write(gccFilePath, fileContents, { charset:"UTF-8" });
+    var contents = FILE.read("header.txt", { charset : "UTF-8" });
+    contents += gcc.stdout.read();
 
     if (FILE.extension(inputFilePath) === ".js" && compress)
-    {
-        var compressor = OS.popen("java -server -Dfile.encoding=UTF-8 -classpath CommonJS/shrinksafe/js.jar:CommonJS/shrinksafe/shrinksafe.jar org.dojotoolkit.shrinksafe.Main", { charset:"UTF-8" });
-    
-        compressor.stdin.write(FILE.absolute(gccFilePath) + "\n");
-        compressor.stdin.flush();
-    
-        fileContents = "";
-    
-        while ((chunk = compressor.stdout.readLine()) !== "/*----*/\n")
-            fileContents += chunk;
-    }
-    
-    FILE.write(outputFilePath, fileContents, { charset : "UTF-8" });
+        contents = compressor(contents);
+
+    FILE.write(outputFilePath, contents, { charset : "UTF-8" });
 }
 
 task("build", [$BUILD_BROWSER_FILE, $BUILD_LICENSE, $BUILD_CJS_OBJECTIVE_J_FRAMEWORK]);

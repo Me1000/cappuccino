@@ -1,9 +1,9 @@
 /*
- * CPLog.j
- * Foundation
+ * CPLog.js
+ * Objective-J
  *
  * Created by Thomas Robinson.
- * Copyright 2008, 280 North, Inc.
+ * Copyright 2008-2010, 280 North, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-exports.CPLogDisable = false;
+GLOBAL(CPLogDisable) = false;
 
 var CPLogDefaultTitle = "Cappuccino";
 
@@ -36,12 +36,13 @@ var _CPLogRegistrations = {};
 // Register Functions:
 
 // Register a logger for all levels, or up to an optional max level
-exports.CPLogRegister = function(aProvider, aMaxLevel)
+GLOBAL(CPLogRegister) = function(aProvider, aMaxLevel)
 {
-    exports.CPLogRegisterRange(aProvider, CPLogLevels[0], aMaxLevel || CPLogLevels[CPLogLevels.length-1]);
+    CPLogRegisterRange(aProvider, CPLogLevels[0], aMaxLevel || CPLogLevels[CPLogLevels.length-1]);
 }
+
 // Register a logger for a range of levels
-exports.CPLogRegisterRange = function(aProvider, aMinLevel, aMaxLevel)
+GLOBAL(CPLogRegisterRange) = function(aProvider, aMinLevel, aMaxLevel)
 {
     var min = _CPLogLevelsInverted[aMinLevel];
     var max = _CPLogLevelsInverted[aMaxLevel];
@@ -52,7 +53,7 @@ exports.CPLogRegisterRange = function(aProvider, aMinLevel, aMaxLevel)
 }
 
 // Register a logger for a single level
-exports.CPLogRegisterSingle = function(aProvider, aLevel)
+GLOBAL(CPLogRegisterSingle) = function(aProvider, aLevel)
 {
     if (!_CPLogRegistrations[aLevel])
         _CPLogRegistrations[aLevel] = [];
@@ -65,7 +66,7 @@ exports.CPLogRegisterSingle = function(aProvider, aLevel)
     _CPLogRegistrations[aLevel].push(aProvider);
 }
 
-exports.CPLogUnregister = function(aProvider) {
+GLOBAL(CPLogUnregister) = function(aProvider) {
     for (var aLevel in _CPLogRegistrations)
         for (var i = 0; i < _CPLogRegistrations[aLevel].length; i++)
             if (_CPLogRegistrations[aLevel][i] === aProvider)
@@ -81,7 +82,7 @@ function _CPLogDispatch(parameters, aLevel, aTitle)
         aLevel = CPLogDefaultLevel;
     
     // use sprintf if param 0 is a string and there is more than one param. otherwise just convert param 0 to a string
-    var message = (typeof parameters[0] == "string" && parameters.length > 1) ? sprintf.apply(null, parameters) : String(parameters[0]);
+    var message = (typeof parameters[0] == "string" && parameters.length > 1) ? exports.sprintf.apply(null, parameters) : String(parameters[0]);
         
     if (_CPLogRegistrations[aLevel])
         for (var i = 0; i < _CPLogRegistrations[aLevel].length; i++)
@@ -90,8 +91,8 @@ function _CPLogDispatch(parameters, aLevel, aTitle)
 
 // Setup CPLog() and CPLog.xxx() aliases
 
-var CPLog = exports.CPLog = function() { _CPLogDispatch(arguments); }
-    
+GLOBAL(CPLog) = function() { _CPLogDispatch(arguments); }
+
 for (var i = 0; i < CPLogLevels.length; i++)
     CPLog[CPLogLevels[i]] = (function(level) { return function() { _CPLogDispatch(arguments, level); }; })(CPLogLevels[i]);
 
@@ -102,8 +103,8 @@ var _CPFormatLogMessage = function(aString, aLevel, aTitle)
     var now = new Date();
     aLevel = ( aLevel == null ? '' : ' [' + aLevel + ']' );
 
-    if (typeof sprintf == "function")
-        return sprintf("%4d-%02d-%02d %02d:%02d:%02d.%03d %s%s: %s",
+    if (typeof exports.sprintf == "function")
+        return exports.sprintf("%4d-%02d-%02d %02d:%02d:%02d.%03d %s%s: %s",
             now.getFullYear(), now.getMonth(), now.getDate(),
             now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds(),
             aTitle, aLevel, aString);
@@ -113,83 +114,8 @@ var _CPFormatLogMessage = function(aString, aLevel, aTitle)
 
 // Loggers:
 
-var ANSI_ESC            = String.fromCharCode(0x1B);
-var ANSI_CSI            = ANSI_ESC + '[';
-var ANSI_TEXT_PROP      = 'm';
-var ANSI_RESET          = '0';
-var ANSI_BOLD           = '1';
-var ANSI_FAINT          = '2'; // unsupported?
-var ANSI_NORMAL         = '22';
-var ANSI_ITALIC         = '3'; // unsupported?
-var ANSI_UNDER          = '4';
-var ANSI_UNDER_DBL      = '21'; // unsupported?
-var ANSI_UNDER_OFF      = '24';
-var ANSI_BLINK          = '5';
-var ANSI_BLINK_FAST     = '6'; // unsupported?
-var ANSI_BLINK_OFF      = '25';
-var ANSI_REVERSE        = '7';
-var ANSI_POSITIVE       = '27';
-var ANSI_CONCEAL        = '8';
-var ANSI_REVEAL         = '28';
-var ANSI_FG             = '3';
-var ANSI_BG             = '4';
-var ANSI_FG_INTENSE     = '9';
-var ANSI_BG_INTENSE     = '10';
-var ANSI_BLACK          = '0';
-var ANSI_RED            = '1';
-var ANSI_GREEN          = '2';
-var ANSI_YELLOW         = '3';
-var ANSI_BLUE           = '4';
-var ANSI_MAGENTA        = '5';
-var ANSI_CYAN           = '6';
-var ANSI_WHITE          = '7';
-
-var colorCodeMap = {
-    "black"   : ANSI_BLACK,
-    "red"     : ANSI_RED,
-    "green"   : ANSI_GREEN,
-    "yellow"  : ANSI_YELLOW,
-    "blue"    : ANSI_BLUE,
-    "magenta" : ANSI_MAGENTA,
-    "cyan"    : ANSI_CYAN,
-    "white"   : ANSI_WHITE
-}
-
-function ANSIControlCode(code, parameters)
-{
-    if (parameters == undefined)
-        parameters = "";
-    else if (typeof(parameters) == 'object' && (parameters instanceof Array))
-        parameters = parameters.join(';');
-    return ANSI_CSI + String(parameters) + String(code);
-}
-
-// simple text helpers:
-
-function ANSITextApplyProperties(string, properties)
-{
-    return ANSIControlCode(ANSI_TEXT_PROP, properties) + String(string) + ANSIControlCode(ANSI_TEXT_PROP);
-}
-
-exports.ANSITextColorize = function(string, color)
-{
-    if (colorCodeMap[color] == undefined)
-        return string;
-    return ANSITextApplyProperties(string, ANSI_FG + colorCodeMap[color]);
-}
-
-// CPLogPrint uses the print() functions present in many non-browser command line JavaScript interpreters
-var levelColorMap = {
-    "fatal": "red",
-    "error": "red",
-    "warn" : "yellow",
-    "info" : "green",
-    "debug": "cyan",
-    "trace": "blue"
-}
-
 // CPLogConsole uses the built in "console" object
-exports.CPLogConsole = function(aString, aLevel, aTitle)
+GLOBAL(CPLogConsole) = function(aString, aLevel, aTitle)
 {
     if (typeof console != "undefined")
     {
@@ -212,36 +138,64 @@ exports.CPLogConsole = function(aString, aLevel, aTitle)
 }
 
 #if COMMONJS
-exports.CPLogPrint = function(aString, aLevel, aTitle)
-{
-    if (typeof print != "undefined")
-    {
-        if (aLevel == "fatal" || aLevel == "error" || aLevel == "warn")
-            var message = exports.ANSITextColorize(_CPFormatLogMessage(aString, aLevel, aTitle), levelColorMap[aLevel]);
-        else
-            var message = _CPFormatLogMessage(aString, exports.ANSITextColorize(aLevel, levelColorMap[aLevel]), aTitle);
 
-        require("system").stderr.print(message);
+var levelColorMap = {
+    "fatal": "red",
+    "error": "red",
+    "warn" : "yellow",
+    "info" : "green",
+    "debug": "cyan",
+    "trace": "blue"
+}
+
+try {
+    var SYSTEM = require("system");
+    var FILE = require("file");
+    if (SYSTEM.args[0])
+        CPLogDefaultTitle = FILE.basename(SYSTEM.args[0]);
+} catch (e) {
+}
+
+var stream;
+
+GLOBAL(CPLogPrint) = function(aString, aLevel, aTitle)
+{
+    if (stream === undefined) {
+        try {
+            stream = require("term").stream;
+        } catch (e) {
+            stream = null;
+        }
+    }
+
+    if (stream) {
+        if (aLevel == "fatal" || aLevel == "error" || aLevel == "warn")
+            stream.print("\0"+levelColorMap[aLevel]+"(" + _CPFormatLogMessage(aString, aLevel, aTitle) + "\0)");
+        else
+            stream.print(_CPFormatLogMessage(aString, "\0"+levelColorMap[aLevel]+"(" + aLevel + "\0)", aTitle));
+    } else if (typeof print != "undefined") {
+        print(_CPFormatLogMessage(aString, aLevel, aTitle))
     }
 }
+
 #else
 
 // CPLogAlert uses basic browser alert() functions
-exports.CPLogAlert = function(aString, aLevel, aTitle)
+GLOBAL(CPLogAlert) = function(aString, aLevel, aTitle)
 {
-    if (typeof alert != "undefined" && !exports.CPLogDisable)
+    if (typeof alert != "undefined" && !CPLogDisable)
     {
         var message = _CPFormatLogMessage(aString, aLevel, aTitle);
-        exports.CPLogDisable = !confirm(message + "\n\n(Click cancel to stop log alerts)");
+        CPLogDisable = !confirm(message + "\n\n(Click cancel to stop log alerts)");
     }
 }
 
 // CPLogPopup uses a slick popup window in the browser:
 var CPLogWindow = null;
-exports.CPLogPopup = function(aString, aLevel, aTitle)
+GLOBAL(CPLogPopup) = function(aString, aLevel, aTitle)
 {
     try {
-        if (exports.CPLogDisable || window.open == undefined)
+        if (CPLogDisable || window.open == undefined)
             return;
     
         if (!CPLogWindow || !CPLogWindow.document)
@@ -249,7 +203,7 @@ exports.CPLogPopup = function(aString, aLevel, aTitle)
             CPLogWindow = window.open("", "_blank", "width=600,height=400,status=no,resizable=yes,scrollbars=yes");
         
             if (!CPLogWindow) {
-                exports.CPLogDisable = !confirm(aString + "\n\n(Disable pop-up blocking for CPLog window; Click cancel to stop log alerts)");
+                CPLogDisable = !confirm(aString + "\n\n(Disable pop-up blocking for CPLog window; Click cancel to stop log alerts)");
                 return;
             }
         
@@ -275,12 +229,31 @@ exports.CPLogPopup = function(aString, aLevel, aTitle)
     }
 }
 
+var CPLogPopupStyle ='<style type="text/css" media="screen"> \
+body{font:10px Monaco,Courier,"Courier New",monospace,mono;padding-top:15px;} \
+div > .fatal,div > .error,div > .warn,div > .info,div > .debug,div > .trace{display:none;overflow:hidden;white-space:pre;padding:0px 5px 0px 5px;margin-top:2px;-moz-border-radius:5px;-webkit-border-radius:5px;} \
+div[wrap="yes"] > div{white-space:normal;} \
+.fatal{background-color:#ffb2b3;} \
+.error{background-color:#ffe2b2;} \
+.warn{background-color:#fdffb2;} \
+.info{background-color:#e4ffb2;} \
+.debug{background-color:#a0e5a0;} \
+.trace{background-color:#99b9ff;} \
+.enfatal .fatal,.enerror .error,.enwarn .warn,.eninfo .info,.endebug .debug,.entrace .trace{display:block;} \
+div#header{background-color:rgba(240,240,240,0.82);position:fixed;top:0px;left:0px;width:100%;border-bottom:1px solid rgba(0,0,0,0.33);text-align:center;} \
+ul#enablers{display:inline-block;margin:1px 15px 0 15px;padding:2px 0 2px 0;} \
+ul#enablers li{display:inline;padding:0px 5px 0px 5px;margin-left:4px;-moz-border-radius:5px;-webkit-border-radius:5px;} \
+[enabled="no"]{opacity:0.25;} \
+ul#options{display:inline-block;margin:0 15px 0px 15px;padding:0 0px;} \
+ul#options li{margin:0 0 0 0;padding:0 0 0 0;display:inline;} \
+</style>';
+
 function _CPLogInitPopup(logWindow)
 {
     var doc = logWindow.document;
     
     // HACK so that head is available below:
-    doc.writeln("<html><head><title></title></head><body></body></html>");
+    doc.writeln("<html><head><title></title>"+CPLogPopupStyle+"</head><body></body></html>");
     
     doc.title = CPLogDefaultTitle + " Run Log";
     
@@ -289,13 +262,6 @@ function _CPLogInitPopup(logWindow)
     
     var base = window.location.protocol + "//" + window.location.host + window.location.pathname;
     base = base.substring(0,base.lastIndexOf("/")+1);
-    
-    var link = doc.createElement("link");
-    link.setAttribute("type", "text/css");
-    link.setAttribute("rel", "stylesheet");
-    link.setAttribute("href", base+"Frameworks/Foundation/Resources/log.css");
-    link.setAttribute("media", "screen");
-    head.appendChild(link);
     
     var div = doc.createElement("div");
     div.setAttribute("id", "header");
@@ -378,15 +344,15 @@ function _CPLogInitPopup(logWindow)
     // Parent closing
     window.addEventListener("unload", function() {
         if (logWindow && logWindow.closeEnabled && logWindow.closeEnabled.checked) {
-            exports.CPLogDisable = true;
+            CPLogDisable = true;
             logWindow.close();
         }
     }, false);
     
     // Log popup closing
     logWindow.addEventListener("unload", function() {
-        if (!exports.CPLogDisable) {
-            exports.CPLogDisable = !confirm("Click cancel to stop logging");
+        if (!CPLogDisable) {
+            CPLogDisable = !confirm("Click cancel to stop logging");
         }
     }, false);
 }

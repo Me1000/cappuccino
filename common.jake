@@ -3,6 +3,13 @@ var FILE = require("file");
 var OS = require("os");
 var UTIL = require("util");
 
+var requiresSudo = false;
+
+SYSTEM.args.slice(1).forEach(function(arg){
+    if (arg === "sudo-install")
+        requiresSudo = true;
+});
+
 function ensurePackageUpToDate(packageName, requiredVersion, options)
 {
     options = options || {};
@@ -32,12 +39,23 @@ function ensurePackageUpToDate(packageName, requiredVersion, options)
     if (!options.noupdate)
     {
         print("Update? yes or no:");
-        if (system.stdin.readLine() !== "yes\n")
+        if (!SYSTEM.env["CAPP_AUTO_UPGRADE"] && system.stdin.readLine() !== "yes\n")
         {
             print("Jake aborted.");
             OS.exit(1);
         }
-        OS.system(["tusk", "install", "--force", packageName]);
+
+        if (requiresSudo)
+        {
+            if (OS.system(["sudo", "tusk", "install", "--force", packageName]))
+            {
+                // Attempt a hackish work-around for sudo compiled with the --with-secure-path option
+                if (OS.system("sudo bash -c 'source " + getShellConfigFile() + "; tusk install --force "+packageName))
+                    OS.exit(1); //rake abort if ($? != 0)
+            }
+        }
+        else
+            OS.system(["tusk", "install", "--force", packageName]);
     }
     
     if (options.message)
@@ -48,9 +66,10 @@ function ensurePackageUpToDate(packageName, requiredVersion, options)
 }
 
 // UPDATE THESE TO PICK UP CORRESPONDING CHANGES IN DEPENDENCIES
-ensurePackageUpToDate("jake",           "0.1.2");
+ensurePackageUpToDate("jake",           "0.1.5");
 ensurePackageUpToDate("browserjs",      "0.1.1");
-ensurePackageUpToDate("narwhal",        "0.2.1", {
+ensurePackageUpToDate("shrinksafe",     "0.2");
+ensurePackageUpToDate("narwhal",        "0.2.2", {
     noupdate : true,
     message : "Update Narwhal to 0.2.1 by running bootstrap.sh, or pulling the latest from git (see: http://github.com/280north/narwhal)."
 });
@@ -99,7 +118,7 @@ global.$BUILD_CONFIGURATION_DIR         = FILE.join($BUILD_DIR, $CONFIGURATION);
 
 global.$BUILD_CJS_OBJECTIVE_J           = FILE.join($BUILD_CONFIGURATION_DIR, "CommonJS", "objective-j");
 
-global.$BUILD_CJS_CAPPUCCINO            = FILE.join($BUILD_DIR, $CONFIGURATION, "CommonJS", "cappuccino");
+global.$BUILD_CJS_CAPPUCCINO            = FILE.join($BUILD_CONFIGURATION_DIR, "CommonJS", "cappuccino");
 global.$BUILD_CJS_CAPPUCCINO_BIN        = FILE.join($BUILD_CJS_CAPPUCCINO, "bin");
 global.$BUILD_CJS_CAPPUCCINO_LIB        = FILE.join($BUILD_CJS_CAPPUCCINO, "lib");
 global.$BUILD_CJS_CAPPUCCINO_FRAMEWORKS = FILE.join($BUILD_CJS_CAPPUCCINO, "Frameworks");
@@ -148,7 +167,7 @@ function packageInCatalog(path)
     return false;
 }
 
-function serializedENV()
+serializedENV = function()
 {
     var envNew = {};
     
@@ -160,8 +179,10 @@ function serializedENV()
 
     // pseudo-HACK: add NARWHALOPT with packages we should ensure are loaded
     var packages = additionalPackages();
-    if (packages.length)
-        envNew["NARWHALOPT"] = packages.map(function(p) { return "-p " + p; }).join(" ");
+    if (packages.length) {
+        envNew["NARWHALOPT"] = packages.map(function(p) { return "-p " + OS.enquote(p); }).join(" ");
+        envNew["PATH"] = packages.map(function(p) { return FILE.join(p, "bin"); }).concat(SYSTEM.env["PATH"]).join(":");
+    }
 
     return Object.keys(envNew).map(function(key) {
         return key + "=" + OS.enquote(envNew[key]);
@@ -179,43 +200,19 @@ function reforkWithPackages()
 
 reforkWithPackages();
 
-function throwIfNotRequireError(e) {
+function handleSetupEnvironmentError(e) {
     if (String(e).indexOf("require error")==-1) {
-        print("setupEnvironment: " + e);
-        throw e;
+        print("setupEnvironment warning: " + e);
+        //throw e;
     }
 }
 
 function setupEnvironment()
 {
-    // TODO: deprecate these globals
-    try {
-        var OBJECTIVE_J_JAKE = require("objective-j/jake");
-        
-        global.app = OBJECTIVE_J_JAKE.app;
-        global.bundle = OBJECTIVE_J_JAKE.bundle;
-        global.framework = OBJECTIVE_J_JAKE.framework;
-
-        global.BundleTask = OBJECTIVE_J_JAKE.BundleTask;
-    } catch (e) {
-        throwIfNotRequireError(e);
-    }
-    
     try {
         require("objective-j").OBJJ_INCLUDE_PATHS.push(FILE.join($BUILD_CONFIGURATION_DIR, "CommonJS", "cappuccino", "Frameworks"));
     } catch (e) {
-        throwIfNotRequireError(e);
-    }
-    
-    try {
-        var CAPPUCCINO_JAKE = require("cappuccino/jake");
-        if (CAPPUCCINO_JAKE.blend)
-            global.blend = CAPPUCCINO_JAKE.blend;
-        //else
-        //    print("no blend!")
-    }
-    catch (e) {
-        throwIfNotRequireError(e);
+        handleSetupEnvironmentError(e);
     }
 }
 
@@ -258,7 +255,8 @@ global.subjake = function(/*Array<String>*/ directories, /*String*/ aTaskName)
     {
         if (FILE.isDirectory(aDirectory) && FILE.isFile(FILE.join(aDirectory, "Jakefile")))
         {
-            var returnCode = OS.system("cd " + aDirectory + " && " + serializedENV() + " " + SYSTEM.args[0] + " " + aTaskName);
+            var cmd = "cd " + OS.enquote(aDirectory) + " && " + serializedENV() + " " + OS.enquote(SYSTEM.args[0]) + " " + OS.enquote(aTaskName);
+            var returnCode = OS.system(cmd);
             if (returnCode)
                 OS.exit(returnCode);
         }

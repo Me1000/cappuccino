@@ -79,10 +79,11 @@ CPTableColumnUserResizingMask   = 1 << 1;
         [self setHeaderView:header];
         
         var textDataView = [CPTextField new];
+        [textDataView setLineBreakMode:CPLineBreakByTruncatingTail];
         [textDataView setValue:[CPColor colorWithHexString:@"333333"] forThemeAttribute:@"text-color"];
         [textDataView setValue:[CPColor whiteColor] forThemeAttribute:@"text-color" inState:CPThemeStateHighlighted];
         [textDataView setValue:[CPFont boldSystemFontOfSize:12] forThemeAttribute:@"font" inState:CPThemeStateHighlighted];
-        [textDataView setValue:CGInsetMake(4.0, 8.0, 0.0, 8.0) forThemeAttribute:@"content-inset"];
+        [textDataView setValue:CPCenterVerticalTextAlignment forThemeAttribute:@"vertical-alignment"];
         [self setDataView:textDataView];
     }
 
@@ -176,7 +177,7 @@ CPTableColumnUserResizingMask   = 1 << 1;
     _maxWidth = aMaxWidth;
 
     var width = [self width],
-        newWidth = MAX(width, [self maxWidth]);
+        newWidth = MIN(width, [self maxWidth]);
 
     if (width !== newWidth)
         [self setWidth:newWidth];
@@ -404,14 +405,11 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
         _maxWidth = [aCoder decodeFloatForKey:CPTableColumnMaxWidthKey];
 
         [self setIdentifier:[aCoder decodeObjectForKey:CPTableColumnIdentifierKey]];
-    //    [self setHeaderView:[aCoder decodeObjectForKey:CPTableColumnHeaderViewKey]];
-    //    [self setDataView:[aCoder decodeObjectForKey:CPTableColumnDataViewKey]];
+        [self setHeaderView:[aCoder decodeObjectForKey:CPTableColumnHeaderViewKey]];
+        [self setDataView:[aCoder decodeObjectForKey:CPTableColumnDataViewKey]];
+        [self setHeaderView:[aCoder decodeObjectForKey:CPTableColumnHeaderViewKey]];
 
-        [self setHeaderView:[CPTextField new]];
-        [self setDataView:[CPTextField new]];
-
-
-    //    _resizingMask  = [aCoder decodeBoolForKey:CPTableColumnResizingMaskKey];
+        _resizingMask  = [aCoder decodeBoolForKey:CPTableColumnResizingMaskKey];
     }
 
     return self;
@@ -425,10 +423,10 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
     [aCoder encodeObject:_minWidth forKey:CPTableColumnMinWidthKey];
     [aCoder encodeObject:_maxWidth forKey:CPTableColumnMaxWidthKey];
 
-//    [aCoder encodeObject:_headerView forKey:CPTableColumnHeaderViewKey];
-//    [aCoder encodeObject:_dataView forKey:CPTableColumnDataViewKey];
+    [aCoder encodeObject:_headerView forKey:CPTableColumnHeaderViewKey];
+    [aCoder encodeObject:_dataView forKey:CPTableColumnDataViewKey];
 
-//    [aCoder encodeObject:_resizingMask forKey:CPTableColumnResizingMaskKey];
+    [aCoder encodeObject:_resizingMask forKey:CPTableColumnResizingMaskKey];
 }
 
 @end

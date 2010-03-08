@@ -62,7 +62,7 @@ var _CPMenuBarWindowBackgroundColor = nil,
 
     if (self)
     {
-        [self setLevel:-1];//CPTornOffMenuWindowLevel];
+        [self setLevel:CPMainMenuWindowLevel];
         [self setAutoresizingMask:CPWindowWidthSizable];
      
         var contentView = [self contentView];

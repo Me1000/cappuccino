@@ -1,3 +1,24 @@
+/*
+ * MarkedStream.js
+ * Objective-J
+ *
+ * Created by Francisco Tolmasky.
+ * Copyright 2008-2010, 280 North, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
 
 function MarkedStream(/*String*/ aString)
 {
@@ -19,10 +40,14 @@ MarkedStream.prototype.magicNumber = function()
     return this._magicNumber;
 }
 
+DISPLAY_NAME(MarkedStream.prototype.magicNumber);
+
 MarkedStream.prototype.version = function()
 {
     return this._version;
 }
+
+DISPLAY_NAME(MarkedStream.prototype.version);
 
 MarkedStream.prototype.getMarker = function()
 {
@@ -47,6 +72,8 @@ MarkedStream.prototype.getMarker = function()
     return marker;
 }
 
+DISPLAY_NAME(MarkedStream.prototype.getMarker);
+
 MarkedStream.prototype.getString = function()
 {
     var string = this._string,
@@ -60,7 +87,7 @@ MarkedStream.prototype.getString = function()
     if (next < 0)
         return null;
 
-    var size = parseInt(string.substring(location, next)),
+    var size = parseInt(string.substring(location, next), 10),
         text = string.substr(next + 1, size);
 
     this._location = next + 1 + size;
@@ -68,4 +95,4 @@ MarkedStream.prototype.getString = function()
     return text;
 }
 
-exports.MarkedStream = MarkedStream;
+DISPLAY_NAME(MarkedStream.prototype.getString);

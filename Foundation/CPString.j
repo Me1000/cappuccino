@@ -56,7 +56,7 @@ CPAnchoredSearch        = 8;
 */
 CPNumericSearch         = 64;
 
-var CPStringHashes      = new CFMutableDictionary();
+var CPStringUIDs        = new CFMutableDictionary();
 
 var CPStringRegexSpecialCharacters = [
       '/', '.', '*', '+', '?', '|', '$', '^',
@@ -142,7 +142,7 @@ var CPStringRegexSpecialCharacters = [
         [CPException raise:CPInvalidArgumentException
                     reason:"initWithFormat: the format can't be 'nil'"];
 
-    self = sprintf.apply(this, Array.prototype.slice.call(arguments, 2));
+    self = ObjectiveJ.sprintf.apply(this, Array.prototype.slice.call(arguments, 2));
     return self;
 }
 
@@ -158,7 +158,7 @@ var CPStringRegexSpecialCharacters = [
         [CPException raise:CPInvalidArgumentException
                     reason:"initWithFormat: the format can't be 'nil'"];
 
-    return sprintf.apply(this, Array.prototype.slice.call(arguments, 2));
+    return ObjectiveJ.sprintf.apply(this, Array.prototype.slice.call(arguments, 2));
 }
 
 /*!
@@ -199,7 +199,7 @@ var CPStringRegexSpecialCharacters = [
     if (!format)
         [CPException raise:CPInvalidArgumentException reason:"initWithFormat: the format can't be 'nil'"];
 
-    return self + sprintf.apply(this, Array.prototype.slice.call(arguments, 2));
+    return self + ObjectiveJ.sprintf.apply(this, Array.prototype.slice.call(arguments, 2));
 }
 
 /*!
@@ -526,15 +526,15 @@ var CPStringRegexSpecialCharacters = [
 */
 - (unsigned)UID
 {
-    var hash = CPStringHashes.valueForKey(self);
+    var UID = CPStringUIDs.valueForKey(self);
 
-    if (!hash) 
+    if (!UID)
     {
-        hash = _objj_generateObjectHash();
-        CPStringHashes.setValueForKey(self, hash);
+        UID = objj_generateObjectUID();
+        CPStringUIDs.setValueForKey(self, UID);
     }
 
-    return hash;
+    return UID + "";
 }
 
 /*!

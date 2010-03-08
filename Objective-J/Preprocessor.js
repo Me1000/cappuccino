@@ -3,7 +3,7 @@
  * Objective-J
  *
  * Created by Francisco Tolmasky.
- * Copyright 2008, 280 North, Inc.
+ * Copyright 2008-2010, 280 North, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,19 +20,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-var OBJJ_PREPROCESSOR_DEBUG_SYMBOLS = 1 << 0,
-    OBJJ_PREPROCESSOR_TYPE_SIGNATURES = 1 << 1;
-
 var TOKEN_ACCESSORS         = "accessors",
     TOKEN_CLASS             = "class",
     TOKEN_END               = "end",
     TOKEN_FUNCTION          = "function",
     TOKEN_IMPLEMENTATION    = "implementation",
     TOKEN_IMPORT            = "import",
+    TOKEN_EACH              = "each",
+    TOKEN_OUTLET            = "outlet",
+    TOKEN_ACTION            = "action",
     TOKEN_NEW               = "new",
     TOKEN_SELECTOR          = "selector",
     TOKEN_SUPER             = "super",
-                            
+    TOKEN_VAR               = "var",
+    TOKEN_IN                = "in",
+
     TOKEN_EQUAL             = '=',
     TOKEN_PLUS              = '+',
     TOKEN_MINUS             = '-',
@@ -52,17 +54,17 @@ var TOKEN_ACCESSORS         = "accessors",
     TOKEN_QUESTION_MARK     = '?',
     TOKEN_OPEN_PARENTHESIS  = '(',
     TOKEN_CLOSE_PARENTHESIS = ')',
-    
+
     TOKEN_WHITESPACE        = /^(?:(?:\s+$)|(?:\/(?:\/|\*)))/,
     TOKEN_NUMBER            = /^[+-]?\d+(([.]\d+)*([eE][+-]?\d+))?$/,
     TOKEN_IDENTIFIER        = /^[a-zA-Z_$](\w|$)*$/;
     
 #define IS_WORD(token) /^\w+$/.test(token)
 
-// FIXME: Used fixed regex
 function Lexer(/*String*/ aString)
 {
     this._index = -1;
+    // FIXME: Used fixed regex
     this._tokens = (aString + '\n').match(/\/\/.*(\r|\n)?|\/\*(?:.|\n|\r)*?\*\/|\w+\b|[+-]?\d+(([.]\d+)*([eE][+-]?\d+))?|"[^"\\]*(\\[\s\S][^"\\]*)*"|'[^'\\]*(\\[\s\S][^'\\]*)*'|\s+|./g);
     this._context = [];
     
@@ -123,6 +125,8 @@ Lexer.prototype.skip_whitespace= function(shouldMoveBackwards)
     return token;
 }
 
+exports.Lexer = Lexer;
+
 #define IS_NOT_EMPTY(buffer) buffer.atoms.length !== 0
 #define CONCAT(buffer, atom) buffer.atoms[buffer.atoms.length] = atom
 
@@ -136,13 +140,20 @@ StringBuffer.prototype.toString = function()
     return this.atoms.join("");
 }
 
-function preprocess(/*String*/ aString, /*String*/ aPath, /*unsigned*/ flags)
+exports.preprocess = function(/*String*/ aString, /*CFURL*/ aURL, /*unsigned*/ flags)
 {
-    return new Preprocessor(aString, aPath, flags).executable();
+    return new Preprocessor(aString, aURL, flags).executable();
 }
 
-function Preprocessor(/*String*/ aString, /*String*/ aPath, /*unsigned*/ flags)
+exports.eval = function(/*String*/ aString)
 {
+    return eval(exports.preprocess(aString).code());
+}
+
+var Preprocessor = function(/*String*/ aString, /*CFURL|String*/ aURL, /*unsigned*/ flags)
+{
+    this._URL = new CFURL(aURL);
+
     // Remove the shebang.
     aString = aString.replace(/^#[^\n]+\n/, "\n");
 
@@ -150,8 +161,6 @@ function Preprocessor(/*String*/ aString, /*String*/ aPath, /*unsigned*/ flags)
     this._currentClass = "";
     this._currentSuperClass = "";
     this._currentSuperMetaClass = "";
-
-    this._filePath = aPath;
 
     this._buffer = new StringBuffer();
     this._preprocessed = NULL;
@@ -165,10 +174,17 @@ function Preprocessor(/*String*/ aString, /*String*/ aPath, /*unsigned*/ flags)
     this.preprocess(this._tokens, this._buffer);
 }
 
+exports.Preprocessor = Preprocessor;
+
+Preprocessor.Flags = { };
+
+Preprocessor.Flags.IncludeDebugSymbols      = 1 << 0;
+Preprocessor.Flags.IncludeTypeSignatures    = 1 << 1;
+
 Preprocessor.prototype.executable = function()
 {
     if (!this._executable)
-        this._executable = new Executable(this._buffer.toString(), this._dependencies);
+        this._executable = new Executable(this._buffer.toString(), this._dependencies, this._URL);
 
     return this._executable;
 }
@@ -290,7 +306,7 @@ Preprocessor.prototype.directive = function(tokens, aStringBuffer, allowedDirect
     
     // Currently we simply swallow forward declarations and only provide them to allow 
     // compatibility with Objective-C files.
-    else if (token == TOKEN_CLASS)
+    else if (token === TOKEN_CLASS)
     {
         tokens.skip_whitespace();
         
@@ -298,19 +314,16 @@ Preprocessor.prototype.directive = function(tokens, aStringBuffer, allowedDirect
     }
     
     // @implementation Class implementations
-    else if (token == TOKEN_IMPLEMENTATION)
+    else if (token === TOKEN_IMPLEMENTATION)
         this.implementation(tokens, buffer);
 
     // @import
-    else if (token == TOKEN_IMPORT)
+    else if (token === TOKEN_IMPORT)
         this._import(tokens);
 
     // @selector
-    else if (token == TOKEN_SELECTOR)
+    else if (token === TOKEN_SELECTOR)
         this.selector(tokens, buffer);
-    
-    else if (token == TOKEN_ACCESSORS)
-        return this.accessors(tokens);
     
     if (!aStringBuffer)
         return buffer;
@@ -379,9 +392,14 @@ Preprocessor.prototype.implementation = function(tokens, /*StringBuffer*/ aStrin
             
             while((token = tokens.skip_whitespace()) && token != TOKEN_CLOSE_BRACE)
             {
-                if (token == TOKEN_PREPROCESSOR)
-                    attributes = this.directive(tokens);
-                
+                if (token === TOKEN_PREPROCESSOR)
+                {
+                    token = tokens.next();
+                    if (token === TOKEN_ACCESSORS)
+                        attributes = this.accessors(tokens);
+                    else if (token !== TOKEN_OUTLET)
+                        throw new SyntaxError(this.error_message("*** Unexpected '@' token in ivar declaration ('@"+token+"')."));
+                }
                 else if (token == TOKEN_SEMICOLON)
                 {
                     if (ivar_count++ == 0)
@@ -407,7 +425,7 @@ Preprocessor.prototype.implementation = function(tokens, /*StringBuffer*/ aStrin
             
             // If we have objects in our declaration, the user forgot a ';'.
             if (declaration.length)
-                throw new SytnaxError(this.error_message("*** Expected ';' in ivar declaration, found '}'."));
+                throw new SyntaxError(this.error_message("*** Expected ';' in ivar declaration, found '}'."));
 
             if (ivar_count)
                 CONCAT(buffer, "]);\n");
@@ -516,30 +534,30 @@ Preprocessor.prototype.implementation = function(tokens, /*StringBuffer*/ aStrin
 
 Preprocessor.prototype._import = function(tokens)
 {
-    var path = "",
+    var URLString = "",
         token = tokens.skip_whitespace(),
-        isLocal = (token != TOKEN_LESS_THAN);
+        isQuoted = (token !== TOKEN_LESS_THAN);
 
     if (token === TOKEN_LESS_THAN)
     {
-        while((token = tokens.next()) && token != TOKEN_GREATER_THAN)
-            path += token;
+        while((token = tokens.next()) && token !== TOKEN_GREATER_THAN)
+            URLString += token;
         
         if(!token)
             throw new SyntaxError(this.error_message("*** Unterminated import statement."));
     }
     
-    else if (token.charAt(0) == TOKEN_DOUBLE_QUOTE)
-        path = token.substr(1, token.length - 2);
+    else if (token.charAt(0) === TOKEN_DOUBLE_QUOTE)
+        URLString = token.substr(1, token.length - 2);
     
     else
         throw new SyntaxError(this.error_message("*** Expecting '<' or '\"', found \"" + token + "\"."));
 
     CONCAT(this._buffer, "objj_executeFile(\"");
-    CONCAT(this._buffer, path);
-    CONCAT(this._buffer, isLocal ? "\", true);" : "\", false);");
+    CONCAT(this._buffer, URLString);
+    CONCAT(this._buffer, isQuoted ? "\", YES);" : "\", NO);");
 
-    this._dependencies.push(new FileDependency(path, isLocal));
+    this._dependencies.push(new FileDependency(new CFURL(URLString), isQuoted));
 }
 
 Preprocessor.prototype.method = function(/*Lexer*/ tokens)
@@ -613,7 +631,7 @@ Preprocessor.prototype.method = function(/*Lexer*/ tokens)
 
     this._currentSelector = selector;
 
-    if (this._flags & OBJJ_PREPROCESSOR_DEBUG_SYMBOLS)
+    if (this._flags & Preprocessor.Flags.IncludeDebugSymbols)
         CONCAT(buffer, " $" + this._currentClass + "__" + selector.replace(/:/g, "_"));
     
     CONCAT(buffer, "(self, _cmd");
@@ -627,8 +645,8 @@ Preprocessor.prototype.method = function(/*Lexer*/ tokens)
     CONCAT(buffer, ")\n{ with(self)\n{");
     CONCAT(buffer, this.preprocess(tokens, NULL, TOKEN_CLOSE_BRACE, TOKEN_OPEN_BRACE));
     CONCAT(buffer, "}\n}");
-    // TODO: actually use OBJJ_PREPROCESSOR_TYPE_SIGNATURES flag instead of tying to OBJJ_PREPROCESSOR_DEBUG_SYMBOLS
-    if (this._flags & OBJJ_PREPROCESSOR_DEBUG_SYMBOLS) //OBJJ_PREPROCESSOR_TYPE_SIGNATURES)
+    // TODO: actually use Flags.IncludeTypeSignatures flag instead of tying to Flags.IncludeDebugSymbols
+    if (this._flags & Preprocessor.Flags.IncludeDebugSymbols) //flags.IncludeTypeSignatures)
         CONCAT(buffer, ","+JSON.stringify(types));
     CONCAT(buffer, ")");
 
@@ -651,7 +669,7 @@ Preprocessor.prototype.preprocess = function(tokens, /*StringBuffer*/ aStringBuf
             closures = [0, 0, 0];
     }
     
-    while ((token = tokens.next()) && ((token != terminator) || count))
+    while ((token = tokens.next()) && ((token !== terminator) || count))
     {
         if (tuple)
         {
@@ -762,12 +780,12 @@ Preprocessor.prototype.preprocess = function(tokens, /*StringBuffer*/ aStringBuf
         }
             
         if (instigator)
-        { 
-            if (token == instigator)
+        {
+            if (token === instigator)
                 ++count;
-            
-            else if (token == terminator) 
-                --count;    
+
+            else if (token === terminator)
+                --count;
         }
 
         // Safari can't handle function declarations of the form function [name]([arguments]) { } 
@@ -778,13 +796,16 @@ Preprocessor.prototype.preprocess = function(tokens, /*StringBuffer*/ aStringBuf
             var accumulator = "";
         
             // Following the function identifier we can either have an open parenthesis or an identifier:
-            while((token = tokens.next()) && token != TOKEN_OPEN_PARENTHESIS && !(/^\w/).test(token))
+            while((token = tokens.next()) && token !== TOKEN_OPEN_PARENTHESIS && !(/^\w/).test(token))
                 accumulator += token;
-            
+
             // If the next token is an open parenthesis, we have a standard function and we don't have to 
             // change it:
             if (token === TOKEN_OPEN_PARENTHESIS)
             {
+                if (instigator === TOKEN_OPEN_PARENTHESIS)
+                    ++count;
+
                 CONCAT(buffer, "function" + accumulator + '(');
                 
                 if (tuple)
@@ -834,7 +855,7 @@ Preprocessor.prototype.preprocess = function(tokens, /*StringBuffer*/ aStringBuf
     
     // If we get this far and we're parsing an objj_msgSend (or array), then we have a problem.
     if (tuple)
-        new SyntaxError(this.error_message("*** Expected ']' - Unterminated message send or array."));
+        throw new SyntaxError(this.error_message("*** Expected ']' - Unterminated message send or array."));
 
     if (!aStringBuffer)
         return buffer;
@@ -887,11 +908,7 @@ Preprocessor.prototype.selector = function(tokens, aStringBuffer)
 
 Preprocessor.prototype.error_message = function(errorMessage)
 {
-    return errorMessage + " <Context File: "+ this._filePath +
+    return errorMessage + " <Context File: "+ this._URL +
                                 (this._currentClass ? " Class: "+this._currentClass : "") +
                                 (this._currentSelector ? " Method: "+this._currentSelector : "") +">";
 }
-
-exports.Lexer = Lexer;
-exports.Preprocessor = Preprocessor;
-exports.preprocess = preprocess;

@@ -24,6 +24,7 @@
 @import "CPControl.j"
 @import "CPStringDrawing.j"
 @import "CPCompatibility.j"
+@import "_CPImageAndTextView.j"
 
 #include "CoreGraphics/CGGeometry.h"
 #include "Platform/Platform.h"
@@ -519,6 +520,7 @@ CPThemeStateEditable		= CPThemeState("editable");
     window.setTimeout(function() 
     { 
         element.focus();
+        [self textDidFocus:[CPNotification notificationWithName:CPTextFieldDidFocusNotification object:self userInfo:nil]];
         CPTextFieldInputOwner = self;
     }, 0.0);
  
@@ -536,8 +538,6 @@ CPThemeStateEditable		= CPThemeState("editable");
         [[self window] platformWindow]._DOMBodyElement.ondrag = function () {};
         [[self window] platformWindow]._DOMBodyElement.onselectstart = function () {};
     }
-    
-    [self textDidFocus:[CPNotification notificationWithName:CPTextFieldDidFocusNotification object:self userInfo:nil]];
 #endif
 
     return YES;
@@ -734,9 +734,10 @@ CPThemeStateEditable		= CPThemeState("editable");
 - (void)setObjectValue:(id)aValue
 {
     [super setObjectValue:aValue];
-
+	
 #if PLATFORM(DOM)
-    if (CPTextFieldInputOwner === self)
+
+    if (CPTextFieldInputOwner === self || [[self window] firstResponder] === self)
         [self _inputElement].value = aValue;
 #endif
 

@@ -30,17 +30,39 @@
 @import "Nib2CibKeyedUnarchiver.j"
 @import "Converter.j"
 
-var FILE = require("file"),
-    OS = require("os");
+var FILE = require("file");
+var OS = require("os");
 
+var parser = new (require("args").Parser)();
 
-CPLogRegister(CPLogPrint);
+parser.usage("INPUT_FILE [OUTPUT_FILE]");
 
-function printUsage()
-{
-    print("usage: nib2cib INPUT_FILE [OUTPUT_FILE] [-F /path/to/required/framework] [-R path/to/resources]");
-    OS.exit(1);
-}
+parser.option("-F", "framework", "frameworks")
+    .push()
+    .help("Add a framework to load");
+
+parser.option("-R", "resources")
+    .set()
+    .help("Set the Resources directory");
+
+parser.option("--mac", "format")
+    .set(NibFormatMac)
+    .def(NibFormatUndetermined)
+    .help("Set format to Mac");
+
+// parser.option("--iphone", "format")
+//     .set(NibFormatIPhone)
+//     .help("Set format to iPhone");
+
+parser.option("-v", "--verbose", "verbose")
+    .inc()
+    .help("Increase verbosity level");
+
+parser.option("-q", "--quiet", "quiet")
+    .set(true)
+    .help("No output");
+
+parser.helpful();
 
 function loadFrameworks(frameworkPaths, aCallback)
 {
@@ -49,17 +71,9 @@ function loadFrameworks(frameworkPaths, aCallback)
 
     frameworkPaths.forEach(function(aFrameworkPath)
     {
-        var infoPlistPath = FILE.join(aFrameworkPath, "Info.plist");
-
-        if (!FILE.isReadable(infoPlistPath))
-        {
-            print("'" + aFrameworkPath + "' is not a framework or could not be found.");
-            OS.exit(1);
-        }
-
         print("Loading " + aFrameworkPath);
 
-        var frameworkBundle = [[CPBundle alloc] initWithPath:infoPlistPath];
+        var frameworkBundle = [[CPBundle alloc] initWithPath:aFrameworkPath];
 
         [frameworkBundle loadWithDelegate:nil];
 
@@ -71,44 +85,40 @@ function loadFrameworks(frameworkPaths, aCallback)
 
 function main(args)
 {
-    // TODO: args parser
-    args.shift();
-    
-    var count = args.length;
+    var options = parser.parse(args, null, null, true);
 
-    if (count < 1)
-        return printUsage();
-
-    var index = 0,
-
-        frameworkPaths = [],
-        converter = [[Converter alloc] init];
-
-    for (; index < count; ++index)
-    {
-        switch(args[index])
-        {
-            case "-help":
-            case "--help":      printUsage();
-                                break;
-
-            case "--mac":       [converter setFormat:NibFormatMac];
-                                break;
-
-            case "-F":          frameworkPaths.push(args[++index]);
-                                break;
-
-            case "-R":          [converter setResourcesPath:args[++index]];
-                                break;
-
-            default:            if ([converter inputPath])
-                                    [converter setOutputPath:args[index]];
-                                else
-                                    [converter setInputPath:args[index]];
-        }
+    if (options.args.length < 1 || options.args.length > 2) {
+        parser.printUsage(options);
+        OS.exit(1);
     }
 
-    loadFrameworks(frameworkPaths, function()
+    if (options.quiet) {}
+    else if (options.verbose === 0)
+        CPLogRegister(CPLogPrint, "warn");
+    else if (options.verbose === 1)
+        CPLogRegister(CPLogPrint, "info");
+    else
+        CPLogRegister(CPLogPrint);
+
+    CPLog.debug("Input:      " + options.args[0]);
+    CPLog.debug("Output:     " + (options.args[1]||""));
+    CPLog.debug("Format:     " + ["Auto","Mac","iPhone"][options.format]);
+    CPLog.debug("Resources:  " + (options.resources||""));
+    CPLog.debug("Frameworks: " + options.frameworks);
+
+    var converter = [[Converter alloc] init];
+
+    if (options.resources)
+        [converter setResourcesPath:options.resources];
+
+    [converter setFormat:options.format];
+
+    [converter setInputPath:options.args[0]];
+
+    if (options.args.length > 1)
+        [converter setOutputPath:options.args[1]];
+
+    loadFrameworks(options.frameworks, function()
     {
         [converter convert];
     });

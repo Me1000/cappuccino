@@ -1,10 +1,31 @@
+/*
+ * CFDictionary.js
+ * Objective-J
+ *
+ * Created by Francisco Tolmasky.
+ * Copyright 2008-2010, 280 North, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
 
-function CFDictionary(/*CFDictionary*/ aDictionary)
+GLOBAL(CFDictionary) = function(/*CFDictionary*/ aDictionary)
 {
     this._keys = [];
     this._count = 0;
     this._buckets = { };
-    this._UID = generateObjectUID();
+    this._UID = objj_generateObjectUID();
 }
 
 var indexOf = Array.prototype.indexOf,
@@ -44,6 +65,8 @@ CFDictionary.prototype.containsKey = function(/*String*/ aKey)
     return hasOwnProperty.apply(this._buckets, [aKey]);
 }
 
+DISPLAY_NAME(CFDictionary.prototype.containsKey);
+
 CFDictionary.prototype.containsValue = function(/*id*/ anObject)
 {
     var keys = this._keys,
@@ -58,15 +81,21 @@ CFDictionary.prototype.containsValue = function(/*id*/ anObject)
     return NO;
 }
 
+DISPLAY_NAME(CFDictionary.prototype.containsValue);
+
 CFDictionary.prototype.count = function()
 {
     return this._count;
 }
 
+DISPLAY_NAME(CFDictionary.prototype.count);
+
 CFDictionary.prototype.countOfKey = function(/*String*/ aKey)
 {
     return this.containsKey(aKey) ? 1 : 0;
 }
+
+DISPLAY_NAME(CFDictionary.prototype.countOfKey);
 
 CFDictionary.prototype.countOfValue = function(/*id*/ anObject)
 {
@@ -83,10 +112,14 @@ CFDictionary.prototype.countOfValue = function(/*id*/ anObject)
     return countOfValue;
 }
 
+DISPLAY_NAME(CFDictionary.prototype.countOfValue);
+
 CFDictionary.prototype.keys = function()
 {
     return this._keys.slice();
 }
+
+DISPLAY_NAME(CFDictionary.prototype.keys);
 
 CFDictionary.prototype.valueForKey = function(/*String*/ aKey)
 {
@@ -97,6 +130,8 @@ CFDictionary.prototype.valueForKey = function(/*String*/ aKey)
 
     return buckets[aKey];
 }
+
+DISPLAY_NAME(CFDictionary.prototype.valueForKey);
 
 CFDictionary.prototype.toString = function()
 {
@@ -115,7 +150,9 @@ CFDictionary.prototype.toString = function()
     return string + "}";
 }
 
-CFMutableDictionary = function(/*CFDictionary*/ aDictionary)
+DISPLAY_NAME(CFDictionary.prototype.toString);
+
+GLOBAL(CFMutableDictionary) = function(/*CFDictionary*/ aDictionary)
 {
     CFDictionary.apply(this, []);
 }
@@ -137,6 +174,8 @@ CFMutableDictionary.prototype.addValueForKey = function(/*String*/ aKey, /*Objec
     this._keys.push(aKey);
     this._buckets[aKey] = aValue;
 }
+
+DISPLAY_NAME(CFMutableDictionary.prototype.addValueForKey);
 
 CFMutableDictionary.prototype.removeValueForKey = function(/*String*/ aKey)
 {
@@ -167,12 +206,16 @@ CFMutableDictionary.prototype.removeValueForKey = function(/*String*/ aKey)
     delete this._buckets[aKey];
 }
 
+DISPLAY_NAME(CFMutableDictionary.prototype.removeValueForKey);
+
 CFMutableDictionary.prototype.removeAllValues = function()
 {
     this._count = 0;
     this._keys = [];
     this._buckets = { };
 }
+
+DISPLAY_NAME(CFMutableDictionary.prototype.removeAllValues);
 
 CFMutableDictionary.prototype.replaceValueForKey = function(/*String*/ aKey, /*Object*/ aValue)
 {
@@ -181,6 +224,8 @@ CFMutableDictionary.prototype.replaceValueForKey = function(/*String*/ aKey, /*O
 
     this._buckets[aKey] = aValue;
 }
+
+DISPLAY_NAME(CFMutableDictionary.prototype.replaceValueForKey);
 
 CFMutableDictionary.prototype.setValueForKey = function(/*String*/ aKey, /*Object*/ aValue)
 {
@@ -194,7 +239,4 @@ CFMutableDictionary.prototype.setValueForKey = function(/*String*/ aKey, /*Objec
         this.addValueForKey(aKey, aValue);
 }
 
-// Exports
-
-exports.CFDictionary = CFDictionary;
-exports.CFMutableDictionary = CFMutableDictionary;
+DISPLAY_NAME(CFMutableDictionary.prototype.setValueForKey);

@@ -683,38 +683,48 @@
 
 - (void)keyDown:(CPEvent)anEvent
 {
-    var keyCode = [anEvent keyCode],
-        documentFrame = [[self documentView] frame],
+    [self interpretKeyEvents:[anEvent]];
+}
+
+- (void)pageUp:(id)sender
+{
+    var contentBounds = [_contentView bounds];
+    [self moveByOffset:CGSizeMake(0.0, -(_CGRectGetHeight(contentBounds) - _verticalPageScroll))];
+}
+
+- (void)pageDown:(id)sender
+{
+    var contentBounds = [_contentView bounds];
+    [self moveByOffset:CGSizeMake(0.0, _CGRectGetHeight(contentBounds) - _verticalPageScroll)];
+}
+
+- (void)moveLeft:(id)sender
+{
+    [self moveByOffset:CGSizeMake(-_horizontalLineScroll, 0.0)];
+}
+
+- (void)moveRight:(id)sender
+{
+    [self moveByOffset:CGSizeMake(_horizontalLineScroll, 0.0)];
+}
+
+- (void)moveUp:(id)sender
+{
+    [self moveByOffset:CGSizeMake(0.0, -_verticalLineScroll)];
+}
+
+- (void)moveDown:(id)sender
+{
+    [self moveByOffset:CGSizeMake(0.0, _verticalLineScroll)];
+}
+
+- (void)moveByOffset:(CGSize)aSize
+{
+    var documentFrame = [[self documentView] frame],
         contentBounds = [_contentView bounds];
-    
-    switch (keyCode)
-    {
-        case 33:    /*pageup*/
-                    contentBounds.origin.y -= _CGRectGetHeight(contentBounds) - _verticalPageScroll;
-                    break;
-                    
-        case 34:    /*pagedown*/
-                    contentBounds.origin.y += _CGRectGetHeight(contentBounds) - _verticalPageScroll;
-                    break;
-                    
-        case 38:    /*up arrow*/
-                    contentBounds.origin.y -= _verticalLineScroll;
-                    break;
 
-        case 40:    /*down arrow*/
-                    contentBounds.origin.y += _verticalLineScroll;
-                    break;
-                    
-        case 37:    /*left arrow*/
-                    contentBounds.origin.x -= _horizontalLineScroll;
-                    break;
-
-        case 49:    /*right arrow*/
-                    contentBounds.origin.x += _horizontalLineScroll;
-                    break;
-                    
-        default:    return [super keyDown:anEvent];
-    }
+    contentBounds.origin.x += aSize.width;
+    contentBounds.origin.y += aSize.height;
 
     [_contentView scrollToPoint:contentBounds.origin];
     [_headerClipView scrollToPoint:CGPointMake(contentBounds.origin, 0)];
@@ -732,7 +742,8 @@ var CPScrollViewContentViewKey       = "CPScrollViewContentView",
     CPScrollViewHasHScrollerKey      = "CPScrollViewHasHScroller",
     CPScrollViewVScrollerKey         = "CPScrollViewVScroller",
     CPScrollViewHScrollerKey         = "CPScrollViewHScroller",
-    CPScrollViewAutohidesScrollerKey = "CPScrollViewAutohidesScroller";
+    CPScrollViewAutohidesScrollerKey = "CPScrollViewAutohidesScroller",
+    CPScrollViewCornerViewKey        = "CPScrollViewCornerViewKey";
 
 @implementation CPScrollView (CPCoding)
 
@@ -755,7 +766,9 @@ var CPScrollViewContentViewKey       = "CPScrollViewContentView",
         _hasVerticalScroller    = [aCoder decodeBoolForKey:CPScrollViewHasVScrollerKey];
         _hasHorizontalScroller  = [aCoder decodeBoolForKey:CPScrollViewHasHScrollerKey];
         _autohidesScrollers     = [aCoder decodeBoolForKey:CPScrollViewAutohidesScrollerKey];
-        
+
+        _cornerView             = [aCoder decodeObjectForKey:CPScrollViewCornerViewKey];
+
         // Do to the anything goes nature of decoding, our subviews may not exist yet, so layout at the end of the run loop when we're sure everything is in a correct state.
         [[CPRunLoop currentRunLoop] performSelector:@selector(reflectScrolledClipView:) target:self argument:_contentView order:0 modes:[CPDefaultRunLoopMode]];
     }
@@ -781,6 +794,8 @@ var CPScrollViewContentViewKey       = "CPScrollViewContentView",
     [aCoder encodeBool:_hasVerticalScroller     forKey:CPScrollViewHasVScrollerKey];
     [aCoder encodeBool:_hasHorizontalScroller   forKey:CPScrollViewHasHScrollerKey];
     [aCoder encodeBool:_autohidesScrollers      forKey:CPScrollViewAutohidesScrollerKey];
+
+    [aCoder encodeObject:_cornerView            forKey:CPScrollViewCornerViewKey];
 }
 
 @end

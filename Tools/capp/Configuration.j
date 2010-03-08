@@ -4,8 +4,7 @@
 @import <Foundation/CPObject.j>
 
 var FILE = require("file"),
-    SYSTEM = require("system"),
-    CFPropertyList = require("objective-j").CFPropertyList;
+    SYSTEM = require("system");
 
 var DefaultDictionary       = nil,
     DefaultConfiguration    = nil,
@@ -65,7 +64,7 @@ var DefaultDictionary       = nil,
         temporaryDictionary = [CPDictionary dictionary];
 
         if (path && FILE.isReadable(path))
-            dictionary = CFPropertyList.propertyListFromString(FILE.read(path, { charset:"UTF-8" }));
+            dictionary = CFPropertyList.readPropertyListFromFile(path);
 
         // readPlist will return nil if the file is empty
         if (!dictionary)
@@ -120,10 +119,12 @@ var DefaultDictionary       = nil,
 
 - (void)save
 {
-    if (![self path])
+    var path = [self path];
+
+    if (!path)
         return;
 
-    plist.writePlist([self path], dictionary);
+    CFPropertyList.writePropertyListToFile(dictionary, path);
 }
 
 @end

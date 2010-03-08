@@ -12,6 +12,7 @@ CPLogRegister(CPLogConsole);
 {
     CPTableView tableView;
     CPTableView tableView2;
+    CPTableView tableView3;
     CPImage     iconImage;
     CPArray     dataSet1;
     CPArray     dataSet2;
@@ -20,29 +21,29 @@ CPLogRegister(CPLogConsole);
 - (void)applicationDidFinishLaunching:(CPNotification)aNotification
 {
     dataSet1 = [],
-    dataSet2 = [];
+    dataSet2 = [],
+    dataSet3 = [];
     
     for(var i = 1; i < 100; i++)
     {
         dataSet1[i - 1] = [CPNumber numberWithInt:i];
         dataSet2[i - 1] = [CPNumber numberWithInt:i+10];
+        dataSet3[i - 1] = [CPNumber numberWithInt:i+20];
     }
+
     
-    var window1 = [[CPWindow alloc] initWithContentRect:CGRectMake(50, 50, 500, 400) styleMask:CPTitledWindowMask],
+    var window1 = [[CPWindow alloc] initWithContentRect:CGRectMake(50, 50, 500, 400) styleMask:CPTitledWindowMask | CPResizableWindowMask],
         view = [window1 contentView];
     
     [view setBackgroundColor:[CPColor whiteColor]];
-    //[view enterFullScreenMode:nil withOptions:nil];
     
-    tableView = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 500.0, 500.0)];//[view bounds]];
+    tableView = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 500.0, 500.0)];
 
     [tableView setAllowsMultipleSelection:YES];
     [tableView setAllowsColumnSelection:YES];
     [tableView setUsesAlternatingRowBackgroundColors:YES];
     [tableView setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithHexString:@"e4e7ff"], [CPColor colorWithHexString:@"f4e7ff"]]];
     [tableView setGridStyleMask:CPTableViewSolidHorizontalGridLineMask | CPTableViewSolidVerticalGridLineMask];
-    
-//    [tableView setBackgroundColor:[CPColor blueColor]];
 
     var iconView = [[CPImageView alloc] initWithFrame:CGRectMake(16,16,0,0)];
 
@@ -58,18 +59,6 @@ CPLogRegister(CPLogConsole);
 
     iconImage = [[CPImage alloc] initWithContentsOfFile:"http://cappuccino.org/images/favicon.png" size:CGSizeMake(16,16)];
 
-//    [textDataView setFrameSize:CGSizeMake(200,32)];
-  //  [textDataView setValue:CGInsetMake(9.0, 7.0, 5.0, 8.0) forThemeAttribute:@"content-inset"];
-    //[textDataView setValue:CGInsetMake(9.0, 7.0, 5.0, 8.0) forThemeAttribute:@"content-inset"];
-    //[textDataView setValue:CGInsetMake(4.0, 4.0, 3.0, 4.0) forThemeAttribute:@"bezel-inset"];
-//    [textDataView setValue:CGInsetMake(2, 0, 0, 0) forThemeAttribute:@"focus-inset"];
-  //  [textDataView setValue:CGInsetMake(0, 0, 0, 0) forThemeAttribute:@"focus-inset" inState:CPThemeStateBezeled|CPThemeStateEditing];
-
-    //[textDataView setValue:CGSizeMake(1,1) forThemeAttribute:@"text-shadow-offset"];
-	//[textDataView setValue:[CPColor blackColor] forThemeAttribute:@"text-shadow-color" inState:CPThemeStateHighlighted];
-
-//    [textDataView setBackgroundColor:[[CPColor redColor] colorWithAlphaComponent:0.5]];
-    
     var desc = [CPSortDescriptor sortDescriptorWithKey:@"self" ascending:YES];
     for (var i = 1; i <= 2; i++)
     {
@@ -78,18 +67,14 @@ CPLogRegister(CPLogConsole);
         [[column headerView] setStringValue:"Number "+i];
 
         [column setMinWidth:50.0];
-        [column setMaxWidth:250.0];
+        [column setMaxWidth:500.0];
         [column setWidth:200.0];
         
         [column setEditable:YES];
         [tableView addTableColumn:column];
     }
-    
-    //[tableView._tableColumns[1] setSortDescriptorPrototype:desc];
-    
-    //[tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
 
-    // [tableView setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
+    [tableView setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth([view bounds]), CGRectGetHeight([view bounds]))];
     [tableView setRowHeight:22.0];
@@ -105,13 +90,10 @@ CPLogRegister(CPLogConsole);
     [tableView setVerticalMotionCanBeginDrag:NO];
     [tableView setDraggingDestinationFeedbackStyle:CPTableViewDropOn];
     [tableView registerForDraggedTypes:[CPArray arrayWithObject:tableTestDragType]];
-    
-    //[tableView scrollColumnToVisible:7];
-    //[tableView scrollRowToVisible:100];
-    
-    //[tableView sizeLastColumnToFit];
+    [window1 setAcceptsMouseMovedEvents:YES];
     [window1 orderFront:self];
     [self newWindow];
+    [self sourceList];
 }
 
 - (void)newWindow
@@ -119,13 +101,12 @@ CPLogRegister(CPLogConsole);
 
     var window2 = [[CPWindow alloc] initWithContentRect:CGRectMake(450, 50, 500, 400) styleMask:CPTitledWindowMask | CPResizableWindowMask];
     
-    tableView2 = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 500.0, 500.0)];//[view bounds]];
+    tableView2 = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 500.0, 500.0)];
 
     [tableView2 setAllowsMultipleSelection:YES];
     [tableView2 setUsesAlternatingRowBackgroundColors:YES];
     [tableView2 setGridStyleMask:CPTableViewSolidHorizontalGridLineMask | CPTableViewSolidVerticalGridLineMask];
 
-//    [tableView setBackgroundColor:[CPColor blueColor]];
 
     var iconView = [[CPImageView alloc] initWithFrame:CGRectMake(16,16,0,0)];
 
@@ -138,34 +119,23 @@ CPLogRegister(CPLogConsole);
     [iconColumn setDataView:iconView];
     [iconColumn setResizingMask:CPTableColumnNoResizing];
 
-    [tableView2 addTableColumn:iconColumn];
+    //[tableView2 addTableColumn:iconColumn];
 
     iconImage = [[CPImage alloc] initWithContentsOfFile:"http://cappuccino.org/images/favicon.png" size:CGSizeMake(16,16)];
 
     var textDataView = [CPTextField new];
-//    [textDataView setFrameSize:CGSizeMake(200,32)];
-  //  [textDataView setValue:CGInsetMake(9.0, 7.0, 5.0, 8.0) forThemeAttribute:@"content-inset"];
-    //[textDataView setValue:CGInsetMake(9.0, 7.0, 5.0, 8.0) forThemeAttribute:@"content-inset"];
-    //[textDataView setValue:CGInsetMake(4.0, 4.0, 3.0, 4.0) forThemeAttribute:@"bezel-inset"];
-//    [textDataView setValue:CGInsetMake(2, 0, 0, 0) forThemeAttribute:@"focus-inset"];
-  //  [textDataView setValue:CGInsetMake(0, 0, 0, 0) forThemeAttribute:@"focus-inset" inState:CPThemeStateBezeled|CPThemeStateEditing];
     
     [textDataView setValue:[CPColor whiteColor] forThemeAttribute:@"text-color" inState:CPThemeStateHighlighted];
     [textDataView setValue:[CPFont systemFontOfSize:12] forThemeAttribute:@"font" inState:CPThemeStateHighlighted];
 
-    //[textDataView setValue:CGSizeMake(1,1) forThemeAttribute:@"text-shadow-offset"];
-	//[textDataView setValue:[CPColor blackColor] forThemeAttribute:@"text-shadow-color" inState:CPThemeStateHighlighted];
-
-//    [textDataView setBackgroundColor:[[CPColor redColor] colorWithAlphaComponent:0.5]];
     var desc = [CPSortDescriptor sortDescriptorWithKey:@"self" ascending:YES];
 
     for (var i = 1; i <= 3; i++)
     {
         var column = [[CPTableColumn alloc] initWithIdentifier:String(i)];
-        [column setSortDescriptorPrototype:desc];
         [[column headerView] setStringValue:"Number "+i];
 
-        [column setWidth:200.0];
+        [column setWidth:i*75];
         [column setMinWidth:50.0];
 
         [column setDataView:textDataView];
@@ -173,8 +143,6 @@ CPLogRegister(CPLogConsole);
         
         [tableView2 addTableColumn:column];
     }
-    
-    //[tableView selectColumnIndexes:[CPIndexSet indexSetWithIndexesInRange:CPMakeRange(0,2)] byExtendingSelection:YES];
 
     [tableView2 setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
 
@@ -197,12 +165,57 @@ CPLogRegister(CPLogConsole);
     [window2 orderFront:self];
 }
 
+- (void)sourceList
+{
+
+    var window3 = [[CPWindow alloc] initWithContentRect:CGRectMake(450, 250, 200, 400) styleMask:CPTitledWindowMask | CPResizableWindowMask];
+    
+    tableView3 = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 200.0, 500.0)];
+
+    [tableView3 setAllowsMultipleSelection:NO];
+    [tableView3 setUsesAlternatingRowBackgroundColors:NO];
+    [tableView3 setGridStyleMask:CPTableViewGridNone];
+    [tableView3 setSelectionHighlightStyle:CPTableViewSelectionHighlightStyleSourceList];
+
+    var column = [[CPTableColumn alloc] initWithIdentifier:"sourcelist"];
+    [[column headerView] setStringValue:"Source List"];
+
+    [column setWidth:200.0];
+    [column setMinWidth:50.0];
+
+    [column setEditable:YES];
+    
+    [tableView3 addTableColumn:column];
+
+    [tableView3 setColumnAutoresizingStyle:CPTableViewUniformColumnAutoresizingStyle];
+
+    var scrollView3 = [[CPScrollView alloc] initWithFrame:[[window3 contentView] bounds]];
+    [tableView3 setRowHeight:32.0];
+    [scrollView3 setDocumentView:tableView3];
+    [scrollView3 setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    
+    [[window3 contentView] addSubview:scrollView3];
+
+    [scrollView3 setAutohidesScrollers:YES];
+
+    [tableView3 setDelegate:self];
+    [tableView3 setDataSource:self];
+    
+    [tableView3 setVerticalMotionCanBeginDrag:NO];
+    //[tableView3 registerForDraggedTypes:[CPArray arrayWithObject:tableTestDragType]];
+    //[tableView3 setDraggingDestinationFeedbackStyle:CPTableViewDropAbove];*/
+    
+    [window3 orderFront:self];
+}
+
 - (int)numberOfRowsInTableView:(CPTableView)atableView
 {
     if(atableView === tableView)
         return dataSet1.length;
     else if(atableView === tableView2)
         return dataSet2.length;
+    else if(atableView === tableView3)
+        return dataSet3.length;
 }
 
 - (id)tableView:(CPTableView)atableView objectValueForTableColumn:(CPTableColumn)tableColumn row:(int)row
@@ -222,6 +235,13 @@ CPLogRegister(CPLogConsole);
          else
              return String(dataSet2[row]);
     }
+    else if(atableView === tableView3)
+    {
+        if ([tableColumn identifier] === "icons")
+             return iconImage;
+         else
+             return String(dataSet3[row]);
+    }
 }
 
 - (id)tableView:(CPTableView)tableView heightOfRow:(int)row
@@ -229,26 +249,20 @@ CPLogRegister(CPLogConsole);
     return 50;
 }
 
-//- (void)tableViewSelectionIsChanging:(CPNotification)aNotification
-//{
-//	CPLog.debug(@"changing! %@", [aNotification description]);
-//}
-//
-//- (void)tableViewSelectionDidChange:(CPNotification)aNotification
-//{
-//	CPLog.debug(@"did change! %@", [aNotification description]);
-//}
+- (void)tableViewSelectionIsChanging:(CPNotification)aNotification
+{
+	CPLog.debug(@"changing! %@", [aNotification description]);
+}
+
+- (void)tableViewSelectionDidChange:(CPNotification)aNotification
+{
+	CPLog.debug(@"did change! %@", [aNotification description]);
+}
 
 - (BOOL)tableView:(CPTableView)aTableView shouldSelectRow:(int)rowIndex
 {
-	//CPLog.debug(@"shouldSelectRow %d", rowIndex);
-	//for (var i = 2, sqrt = SQRT(rowIndex+1); i <= sqrt; i++)
-	  //  if ((rowIndex+1) % i === 0)
-	        //return false; 
-   // if(rowIndex % 2 == 1)
-   // 	return true;
-   // else
-        return true;
+    //CPLog.debug(@"tableView:shouldSelectRow");
+    return true;
 }
 
 - (BOOL)selectionShouldChangeInTableView:(CPTableView)aTableView
@@ -281,7 +295,10 @@ CPLogRegister(CPLogConsole);
 
 - (BOOL)tableView:(CPTableView)aTableView shouldEditTableColumn:(CPTableColumn)tableColumn row:(int)row
 {
-    return NO;
+    if(aTableView === tableView3)
+        return YES;
+    else
+        return NO;
 }
 
 - (void)tableView:(CPTableView)aTableView willDisplayView:(CPView)aView forTableColumn:(CPTableColumn)tableColumn row:(int)row
@@ -291,7 +308,8 @@ CPLogRegister(CPLogConsole);
 
 - (void)tableView:(CPTableView)aTableView setObjectValue:(id)aValue forTableColumn:(CPTableColumn)tableColumn row:(int)row
 {
-    
+    if(aTableView === tableView3)
+        dataSet3[row] = aValue;
 }
 
 - (void)tableView:(CPTableView)aTableView sortDescriptorsDidChange:(CPArray)oldDescriptors
@@ -306,6 +324,9 @@ CPLogRegister(CPLogConsole);
 
 - (BOOL)tableView:(CPTableView)aTableView writeRowsWithIndexes:(CPIndexSet)rowIndexes toPasteboard:(CPPasteboard)pboard
 {
+    if (aTableView === tableView3)
+        return NO;
+
     var data = [rowIndexes, [aTableView UID]];
     
     var encodedData = [CPKeyedArchiver archivedDataWithRootObject:data];
@@ -320,8 +341,6 @@ CPLogRegister(CPLogConsole);
                    proposedRow:(CPInteger)row 
                    proposedDropOperation:(CPTableViewDropOperation)operation
 {
- //   console.log([aTableView rectOfRow:0]);
-    //console.log(row)
 
     [[aTableView window] orderFront:nil];
 
@@ -382,6 +401,11 @@ CPLogRegister(CPLogConsole);
 - (void)tableView:(CPTableView)aTableView didEndDraggedImage:(CPImage)anImage atPosition:(CGPoint)aPoint operation:(CPDragOperation)anOperation
 {
     //for convenience     
+}
+
+- (void)tableView:(CPTableView)aTableView didClickTableColumn:(CPTableColumn)aColumn
+{
+    console.log("table: "+aTableView+" clicked column: "+aColumn);
 }
 
 @end

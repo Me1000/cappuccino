@@ -36,20 +36,26 @@ var CPThemeStatePressed = CPThemeState("pressed");
     self = [super initWithFrame:frame];
     if (self)
     {   
-        _textField = [[_CPImageAndTextView alloc] initWithFrame:CGRectMake(5, 1, CGRectGetWidth([self bounds]) - 10, CGRectGetHeight([self bounds]) - 1)];
-        [_textField setAutoresizingMask:CPViewWidthSizable|CPViewHeightSizable];
-        
-        [_textField setTextColor: [CPColor colorWithHexString: @"333333"]];
-        [_textField setFont:[CPFont boldSystemFontOfSize:12.0]];
-        [_textField setAlignment:CPLeftTextAlignment];
-        [_textField setVerticalAlignment:CPCenterVerticalTextAlignment];
-        [_textField setTextShadowColor:[CPColor whiteColor]];
-        [_textField setTextShadowOffset:CGSizeMake(0,1)];
-
-        [self addSubview:_textField];
+        [self _init];
     }
     
     return self;
+}
+
+- (void)_init
+{
+    _textField = [[_CPImageAndTextView alloc] initWithFrame:CGRectMake(5, 1, CGRectGetWidth([self bounds]) - 10, CGRectGetHeight([self bounds]) - 1)];
+    [_textField setAutoresizingMask:CPViewWidthSizable|CPViewHeightSizable];
+    
+    [_textField setLineBreakMode:CPLineBreakByTruncatingTail];
+    [_textField setTextColor: [CPColor colorWithHexString: @"333333"]];
+    [_textField setFont:[CPFont boldSystemFontOfSize:12.0]];
+    [_textField setAlignment:CPLeftTextAlignment];
+    [_textField setVerticalAlignment:CPCenterVerticalTextAlignment];
+    [_textField setTextShadowColor:[CPColor whiteColor]];
+    [_textField setTextShadowOffset:CGSizeMake(0,1)];
+
+    [self addSubview:_textField];
 }
 
 - (void)layoutSubviews
@@ -86,6 +92,11 @@ var CPThemeStatePressed = CPThemeState("pressed");
     [_textField sizeToFit];
 }
 
+- (void)setFont:(CPFont)aFont
+{
+    [_textField setFont:aFont];
+}
+
 - (void)setValue:(id)aValue forThemeAttribute:(id)aKey
 {
     [_textField setValue:aValue forThemeAttribute:aKey];
@@ -102,6 +113,36 @@ var CPThemeStatePressed = CPThemeState("pressed");
 	{
 		[_textField setImagePosition:CPNoImage];
 	}
+}
+
+@end
+
+var _CPTableColumnHeaderViewStringValueKey = @"_CPTableColumnHeaderViewStringValueKey",
+    _CPTableColumnHeaderViewFontKey = @"_CPTableColumnHeaderViewFontKey",
+    _CPTableColumnHeaderViewImageKey = @"_CPTableColumnHeaderViewImageKey";
+
+@implementation _CPTableColumnHeaderView (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    if (self = [super initWithCoder:aCoder])
+    {
+        [self _init];
+        [self _setIndicatorImage:[aCoder decodeObjectForKey:_CPTableColumnHeaderViewImageKey]];
+        [self setStringValue:[aCoder decodeObjectForKey:_CPTableColumnHeaderViewStringValueKey]];
+        [self setFont:[aCoder decodeObjectForKey:_CPTableColumnHeaderViewFontKey]];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [super encodeWithCoder:aCoder];
+    
+    [aCoder encodeObject:[_textField text] forKey:_CPTableColumnHeaderViewStringValueKey];
+    [aCoder encodeObject:[_textField image] forKey:_CPTableColumnHeaderViewImageKey];
+    [aCoder encodeObject:[_textField font] forKey:_CPTableColumnHeaderViewFontKey];
 }
 
 @end
@@ -155,8 +196,9 @@ var CPThemeStatePressed = CPThemeState("pressed");
     var tableRange = _tableView._tableColumnRanges[aColumnIndex],
         bounds = [self bounds];
 
-    bounds.origin.x = tableRange.location;
-    bounds.size.width = tableRange.length;
+    var rMinX = ROUND(tableRange.location);
+    bounds.origin.x = rMinX;
+    bounds.size.width = FLOOR(tableRange.length + tableRange.location - rMinX);
     
     return bounds;
 }
@@ -168,7 +210,7 @@ var CPThemeStatePressed = CPThemeState("pressed");
 
     var rect = [self headerRectOfColumn:column];
 
-    rect.origin.x = CGRectGetMaxX(rect) - 10;
+    rect.origin.x = CGRectGetMaxX(rect) - 5;
     rect.size.width = 20;
 
     return rect;    
@@ -199,14 +241,14 @@ var CPThemeStatePressed = CPThemeState("pressed");
     // should we send column -1 ?
     [_tableView _sendDelegateDidMouseDownInHeader:clickedColumn];
     
-    var resizeLocation = CGPointMake(mouseLocation.x - 10, mouseLocation.y),
+    var resizeLocation = CGPointMake(mouseLocation.x - 5, mouseLocation.y),
         resizedColumn = [self columnAtPoint:resizeLocation];
     
     if (resizedColumn == -1)
         return;
 
     // 2 different tracking methods: one for resizing/stop-resizing, another one for selection/reordering
-    if ([_tableView allowsColumnResizing] 
+    if ([_tableView allowsColumnResizing]
         && CGRectContainsPoint([self _cursorRectForColumn:resizedColumn], mouseLocation))
     {
         _resizedColumn = resizedColumn;
@@ -237,14 +279,7 @@ var CPThemeStatePressed = CPThemeState("pressed");
         
         return;
     }
-/*
-    else if (type & CPLeftMouseDragged && [_tableView allowsColumnREordering])
-    {
-        // Start dragging here   
-        [[CPCursor closedHandCursor] set];
-        return;
-    }
-*/        
+
     [CPApp setTarget:self selector:@selector(trackMouseWithEvent:) forNextEventMatchingMask:CPLeftMouseDraggedMask | CPLeftMouseUpMask | CPLeftMouseDownMask untilDate:nil inMode:nil dequeue:YES];
 }
 
@@ -254,9 +289,12 @@ var CPThemeStatePressed = CPThemeState("pressed");
         tableColumn = [[_tableView tableColumns] objectAtIndex:_resizedColumn],
         type = [anEvent type];
 
-    if (_lastLocation == nil) _lastLocation = location;
-    if (_columnOldWidth == nil) _columnOldWidth = [tableColumn width];
-        
+    if (_lastLocation == nil)
+        _lastLocation = location;
+
+    if (_columnOldWidth == nil)
+        _columnOldWidth = [tableColumn width];
+
     if (type === CPLeftMouseUp)
     {   
         [self _updateResizeCursor:anEvent];
@@ -264,7 +302,7 @@ var CPThemeStatePressed = CPThemeState("pressed");
         [tableColumn _postDidResizeNotificationWithOldWidth:_columnOldWidth];
         [tableColumn setDisableResizingPosting:NO];        
         [_tableView setDisableAutomaticResizing:NO];
-        
+
         _resizedColumn = -1;
         _lastLocation = nil;
         _columnOldWidth = nil;
@@ -281,26 +319,33 @@ var CPThemeStatePressed = CPThemeState("pressed");
             [[CPCursor resizeLeftCursor] set];
         else
         {
+            _tableView._lastColumnShouldSnap = NO;
             [tableColumn setWidth:newWidth];
             // FIXME: there has to be a better way to do this...
             // We should refactor the auto resizing crap.
             // We need to figure out the exact cocoa behavior here though. 
-            //[_tableView resizeWithOldSuperviewSize:[_tableView bounds]];
             _lastLocation = location;
-                        
+
             [[CPCursor resizeLeftRightCursor] set];
             [self setNeedsLayout];
             [self setNeedsDisplay:YES];
         }
     }
-    
+
     [CPApp setTarget:self selector:@selector(trackResizeWithEvent:) forNextEventMatchingMask:CPLeftMouseDraggedMask | CPLeftMouseUpMask untilDate:nil inMode:nil dequeue:YES];
 }
 
 - (void)_updateResizeCursor:(CPEvent)theEvent
 {
+    // never get stuck in resize cursor mode (FIXME take out when we turn on tracking rects)
+    if (![_tableView allowsColumnResizing] || ([theEvent type] === CPLeftMouseUp && ![[self window] acceptsMouseMovedEvents]))
+    {
+        [[CPCursor arrowCursor] set];
+        return;
+    }
+
     var mouseLocation = [self convertPoint:[theEvent locationInWindow] fromView:nil],    
-        mouseOverLocation = CGPointMake(mouseLocation.x - 10, mouseLocation.y),
+        mouseOverLocation = CGPointMake(mouseLocation.x - 5, mouseLocation.y),
         overColumn = [self columnAtPoint:mouseOverLocation];
     
     if (overColumn >= 0 && CGRectContainsPoint([self _cursorRectForColumn:overColumn], mouseLocation))
@@ -321,8 +366,8 @@ var CPThemeStatePressed = CPThemeState("pressed");
 
 - (void)viewDidMoveToWindow
 {
-    if ([_tableView allowsColumnResizing])
-        [[self window] setAcceptsMouseMovedEvents:YES];
+    //if ([_tableView allowsColumnResizing])
+    //    [[self window] setAcceptsMouseMovedEvents:YES];
 }
 
 - (void)mouseEntered:(CPEvent)theEvent
@@ -368,6 +413,9 @@ var CPThemeStatePressed = CPThemeState("pressed");
 
 - (void)drawRect:(CGRect)aRect
 {
+    if (!_tableView)
+        return;
+
     var context = [[CPGraphicsContext currentContext] graphicsPort],
         exposedColumnIndexes = [_tableView columnIndexesInRect:aRect],
         columnsArray = [],
@@ -424,3 +472,32 @@ var CPThemeStatePressed = CPThemeState("pressed");
 }
 
 @end
+
+var CPTableHeaderViewTableViewKey = @"CPTableHeaderViewTableViewKey";
+
+@implementation CPTableHeaderView (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    if (self = [super initWithCoder:aCoder])
+    {
+        _resizedColumn = -1;
+        _draggedColumn = -1;
+        _pressedColumn = -1;
+        _draggedDistance = 0.0;
+        _lastLocation = nil;
+        _columnOldWidth = nil;
+        _tableView = [aCoder decodeObjectForKey:CPTableHeaderViewTableViewKey];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [super encodeWithCoder:aCoder];
+    [aCoder encodeObject:_tableView forKey:CPTableHeaderViewTableViewKey];
+}
+
+@end
+

@@ -137,7 +137,7 @@ var PrimaryPlatformWindow   = NULL;
     return frame;
 }
 
-- (void)usableContentFrame
+- (CGRect)usableContentFrame
 {
     return [self visibleFrame];
 }
@@ -193,6 +193,20 @@ var PrimaryPlatformWindow   = NULL;
 #if PLATFORM(DOM)
     if (_DOMWindow && typeof _DOMWindow["cpMiniaturize"] === "function")
         _DOMWindow.cpMiniaturize();
+#endif
+}
+
+- (void)moveWindow:(CPWindow)aWindow fromLevel:(int)fromLevel toLevel:(int)toLevel
+{
+#if PLATFORM(DOM)
+    if (!aWindow._isVisible)
+        return;
+
+    var fromLayer = [self layerAtLevel:fromLevel create:NO],
+        toLayer = [self layerAtLevel:toLevel create:YES];
+
+    [fromLayer removeWindow:aWindow];
+    [toLayer insertWindow:aWindow atIndex:CPNotFound];
 #endif
 }
 
