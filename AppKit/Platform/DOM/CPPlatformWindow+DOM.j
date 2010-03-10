@@ -1048,7 +1048,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
     
     else if (type === "mousedown")
     {
-        if (sourceElement.tagName === "INPUT" && sourceElement != _DOMFocusElement)
+        if ((sourceElement.tagName === "INPUT" || sourceElement.tagName === "TEXTAREA") && sourceElement != _DOMFocusElement)
         {
             if ([CPPlatform supportsDragAndDrop])
             {
