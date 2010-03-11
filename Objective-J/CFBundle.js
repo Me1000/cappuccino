@@ -685,7 +685,7 @@ CFBundle.prototype.bundlePath = function()
 
 CFBundle.prototype.path = function()
 {
-    CPLog.warn("CFBundle.prototype.path is deprecated, use CFBundle.prototype.bundlePath instead.");
+    //CPLog.warn("CFBundle.prototype.path is deprecated, use CFBundle.prototype.bundlePath instead.");
     return this.bundlePath.apply(this, arguments);
 }
 
