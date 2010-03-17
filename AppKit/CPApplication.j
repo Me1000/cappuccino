@@ -860,12 +860,11 @@ CPRunContinuesResponse  = -1002;
     
     if ([windowController respondsToSelector:anAction])
         return windowController;
-    
+
     var theDocument = [windowController document];
-    
-    if (theDocument != delegate && [theDocument respondsToSelector:anAction])
+    if (theDocument !== delegate && [theDocument respondsToSelector:anAction])
         return theDocument;
-    
+
     return nil;
 }
 
@@ -913,8 +912,6 @@ CPRunContinuesResponse  = -1002;
 - (void)setCallback:(Function)aCallback forNextEventMatchingMask:(unsigned int)aMask untilDate:(CPDate)anExpiration inMode:(CPString)aMode dequeue:(BOOL)shouldDequeue
 {
     _eventListeners.push(_CPEventListenerMake(aMask, aCallback));
-    
-    if (_eventListeners.length == 3) objj_debug_print_backtrace();
 }
 
 - (CPEvent)setTarget:(id)aTarget selector:(SEL)aSelector forNextEventMatchingMask:(unsigned int)aMask untilDate:(CPDate)anExpiration inMode:(CPString)aMode dequeue:(BOOL)shouldDequeue
@@ -1063,7 +1060,7 @@ CPRunContinuesResponse  = -1002;
     else if ([self mainWindow])
         [[self mainWindow] makeKeyAndOrderFront:self];
     else
-        [[[self mainMenu] window] makeKeyWindow]; //FIXME this may not actually work
+        [[self mainMenu]._menuWindow makeKeyWindow]; //FIXME this may not actually work
 
     _previousKeyWindow = nil;
     _previousMainWindow = nil;
