@@ -864,7 +864,7 @@ CPThemeStateEditable		= CPThemeState("editable");
     if (![CPPlatform isBrowser])
     {
         [self copy:sender];
-        [self deleteBackwards:sender];
+        [self deleteBackward:sender];
     }
 }
 
@@ -877,7 +877,7 @@ CPThemeStateEditable		= CPThemeState("editable");
         if (![[pasteboard types] containsObject:CPStringPboardType])
             return;
 
-        [self deleteBackwards:sender];
+        [self deleteBackward:sender];
 
         var selectedRange = [self selectedRange],
             stringValue = [self stringValue],
@@ -963,7 +963,7 @@ CPThemeStateEditable		= CPThemeState("editable");
     [self selectText:sender];
 }
 
-- (void)deleteBackwards:(id)sender
+- (void)deleteBackward:(id)sender
 {
     var selectedRange = [self selectedRange],
         stringValue = [self stringValue],
