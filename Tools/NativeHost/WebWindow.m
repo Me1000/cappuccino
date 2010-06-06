@@ -15,6 +15,11 @@ CFMachPortRef tap_port;
 
 CGEventRef headTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon)
 {
+	// this fixes the bug where clicking on a window of another app would cause the window to once again
+	// send the scroll events to the window under it... I believe this whole thing can be removed with the addition of the other commit
+	// but since I don't really know why this was put here in the first place I'm doing to leave the rest of it...
+	return event;
+	
     // It's dangerous to fail in this code: could disable mousedown system-wide. So just try catch it all.
     @try
     {
@@ -117,6 +122,7 @@ CGEventRef headTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef e
 
         [self setBackgroundColor:[NSColor clearColor]];
         [self setOpaque:NO];
+		[self setIgnoresMouseEvents:NO];
         [self setReleasedWhenClosed:YES];
 		[super setHasShadow:NO];
     }
